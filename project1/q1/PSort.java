@@ -27,7 +27,7 @@ public class PSort {
 			}
 
 			if (subArray.length <= 4) {
-				insertSort(subArray, begin, end);
+				insertSort(begin, end);
 				return;
 			}
 
@@ -44,7 +44,7 @@ public class PSort {
 					upperBound--;
 				}
 				if (lowerBound <= upperBound) {
-					swap(subArray, lowerBound, upperBound);
+					swap(lowerBound, upperBound);
 					lowerBound++;
 					upperBound--;
 				}
@@ -56,8 +56,6 @@ public class PSort {
 				Future<?> futureLesser = executor.submit(lesserThanPivotArray);
 				try {
 					futureLesser.get();
-					// Debug to show that the sorting task is properly forking the sorting to multiple processes.
-					// System.out.println("Properly forked arrays.");
 				} catch (InterruptedException e) {
 					e.printStackTrace();
 				} catch (ExecutionException e) {
@@ -70,8 +68,6 @@ public class PSort {
 				Future<?> futureGreater = executor.submit(greaterThanPivotArray);
 				try {
 					futureGreater.get();
-					// Debug to show that the sorting task is properly forking the sorting to multiple processes.
-					// System.out.println("Properly forked arrays.");
 				} catch (InterruptedException e) {
 					e.printStackTrace();
 				} catch (ExecutionException e) {
@@ -80,12 +76,11 @@ public class PSort {
 			}
 		}
 
-		private static void insertSort(int[] array, int begin, int end) {
-			// System.out.println("Insert sort is properly called when subarray reaches <= 4 elements.");
-			for (int runner = 1; runner < array.length; runner++) {
+		private void insertSort(int begin, int end) {
+			for (int runner = 1; runner < subArray.length; runner++) {
 				for (int switcher = runner; switcher > 0; switcher--) {
-					if (array[switcher] < array[switcher - 1]) {
-						swap(array, switcher, switcher - 1);
+					if (subArray[switcher] < subArray[switcher - 1]) {
+						swap(switcher, switcher - 1);
 					}
 				}
 			}
@@ -95,10 +90,10 @@ public class PSort {
  			return (begin + end) / 2;
  		}
 
-	 	private static void swap(int[] array, int begin, int end) {
-	 		int temp = array[begin];
-	 		array[begin] = array[end];
-	 		array[end] = temp;
+	 	private void swap(int begin, int end) {
+	 		int temp = subArray[begin];
+	 		subArray[begin] = subArray[end];
+	 		subArray[end] = temp;
 	 	}
 	}
 
