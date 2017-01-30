@@ -5,7 +5,7 @@ import java.util.*;
 import java.util.concurrent.*;
 
 public class PSearch {
-	public static final int INDEX_NOT_FOUND = -1;
+	public static final int FAILED_SEARCH = -1;
 	public static int[] arrayToSearch;
 
 	private static class SubArray implements Callable<Integer> {
@@ -31,7 +31,7 @@ public class PSearch {
 				}
 				begin++;
 			}
-			return INDEX_NOT_FOUND;
+			return FAILED_SEARCH;
 		}	
 
 		private boolean valueFound(int index) {
@@ -49,9 +49,10 @@ public class PSearch {
 			numThreads = array.length;
 		}
 
+		// Determine size of subarrays based on the thread count.
 		int splitSize = (int) Math.ceil((double) array.length / (double) numThreads);
 
-		// Split array into subarrays based on splitSize.
+		// Create threads to search subarray of size splitSize.
 		for (int index = 0; index < array.length; index += splitSize) {
 			int begin = index;
 			int end = Math.min(array.length, index + splitSize);
@@ -61,7 +62,9 @@ public class PSearch {
 			searchResults.add(future);
 		}
 
-		int contender = INDEX_NOT_FOUND;
+		// Initially, assume none of the contenders find the desired value.
+		int contender = FAILED_SEARCH;
+		// Fetch the result of each thread.
 		for (Future<Integer> result : searchResults) {
 			try {
 				contender = result.get();
@@ -70,12 +73,11 @@ public class PSearch {
 			} catch (ExecutionException e) {
 				e.printStackTrace();
 			} finally {
-				if (contender != INDEX_NOT_FOUND) {
-					return (int) contender;
+				if (contender != FAILED_SEARCH) {
+					return contender;
 				}
 			}
 		}
-
-		return contender;
+		return FAILED_SEARCH;
 	}
 }
