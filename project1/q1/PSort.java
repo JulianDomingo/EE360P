@@ -26,7 +26,8 @@ public class PSort {
 				return;
 			}
 
-			if (subArray.length <= 4) {
+			// Instructed to sequentially sort the array at upper bound 4 elements.
+			if (Math.abs(end - begin) <= 4) {
 				insertSort(begin, end);
 				return;
 			}
@@ -64,7 +65,7 @@ public class PSort {
 			}
 			// Fork the subarray greater than the pivot.
 			if (end > lowerBound) {
-				SubArray greaterThanPivotArray = new SubArray(subArray, lowerBound, end);
+				SubArray greaterThanPivotArray = new SubArray(subArray, lowerBound, end);			
 				Future<?> futureGreater = executor.submit(greaterThanPivotArray);
 				try {
 					futureGreater.get();
