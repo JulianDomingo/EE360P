@@ -24,17 +24,19 @@ public class PSearch {
 			return searchSubArray();
 		}
 
+		// Simple linear search.
 		private int searchSubArray() {
-			while (begin < end) {
-				if (valueFound(begin)) {
-					return begin;
+			int currentIndex = begin;
+			while (currentIndex < end) {
+				if (valueFoundAt(currentIndex)) {
+					return currentIndex;
 				}
-				begin++;
+				currentIndex++;
 			}
 			return FAILED_SEARCH;
 		}	
 
-		private boolean valueFound(int index) {
+		private boolean valueFoundAt(int index) {
 			return arrayToSearch[index] == desiredValue;
 		}
 	} 
@@ -54,9 +56,11 @@ public class PSearch {
 
 		// Create threads to search subarray of size splitSize.
 		for (int index = 0; index < array.length; index += splitSize) {
+			// Determine start and endpoints for each array chunk.
 			int begin = index;
 			int end = Math.min(array.length, index + splitSize);
 
+			// Start the thread and gather the future object for it.
 			Callable<Integer> callable = new SubArray(begin, end, desiredValue);
 			Future<Integer> future = executor.submit(callable);
 			searchResults.add(future);
@@ -64,7 +68,7 @@ public class PSearch {
 
 		// Initially, assume none of the contenders find the desired value.
 		int contender = FAILED_SEARCH;
-		// Fetch the result of each thread.
+		// Fetch the future result of each thread.
 		for (Future<Integer> result : searchResults) {
 			try {
 				contender = result.get();
