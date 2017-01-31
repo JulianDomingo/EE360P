@@ -26,8 +26,7 @@ public class PSort {
 				return;
 			}
 
-			// Instructed to sequentially sort the array w/ insert sort at upper bound 4 elements.
-			if (Math.abs(end - begin) <= 4) {
+			if (fourOrLessElements()) {
 				insertSort(begin, end);
 				return;
 			}
@@ -63,7 +62,7 @@ public class PSort {
 					e.printStackTrace();
 				}
 			}
-			
+
 			// Fork the subarray greater than the pivot.
 			if (end > lowerBound) {
 				SubArray greaterThanPivotArray = new SubArray(subArray, lowerBound, end);			
@@ -96,6 +95,10 @@ public class PSort {
 	 		int temp = subArray[begin];
 	 		subArray[begin] = subArray[end];
 	 		subArray[end] = temp;
+	 	}
+
+	 	private boolean fourOrLessElements() {
+	 		return Math.abs(end - begin) <= 4;
 	 	}
 	}
 
