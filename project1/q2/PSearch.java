@@ -1,5 +1,5 @@
-//Name=Julian Domingo
-//UT-EID=jad5348
+//Name=Julian Domingo, Alec Bargas
+//UT-EID=jad5348, apb973
 
 import java.util.*;
 import java.util.concurrent.*;
@@ -7,14 +7,19 @@ import java.util.concurrent.*;
 public class PSearch {
 	public static final int FAILED_SEARCH = -1;
 	public static int[] arrayToSearch;
+	public int splitSize;
+
+	public ExecutorService executor;
+	public ArrayList<Future<Integer>> searchResults;
+	public ArrayList<Callable<Integer>> callableThreads;
 
 	private static class SubArray implements Callable<Integer> {
-		private int begin;
+		private int start;
 		private int end;
 		private int desiredValue;
 
-		private SubArray(int begin, int end, int desiredValue) {
-			this.begin = begin;
+		private SubArray(int start, int end, int desiredValue) {
+			this.start = start;
 			this.end = end;
 			this.desiredValue = desiredValue;
 		}
@@ -26,7 +31,7 @@ public class PSearch {
 
 		// Simple linear search.
 		private int searchSubArray() {
-			int currentIndex = begin;
+			int currentIndex = start;
 			while (currentIndex < end) {
 				if (valueFoundAt(currentIndex)) {
 					return currentIndex;
@@ -43,32 +48,29 @@ public class PSearch {
 
 	public static int parallelSearch(int desiredValue, int[] array, int numThreads){
 		arrayToSearch = array;
-		ExecutorService executor = Executors.newFixedThreadPool(numThreads);
-		ArrayList<Future<Integer>> searchResults = new ArrayList<Future<Integer>>(numThreads);
+		executor = Executors.newFixedThreadPool(numThreads);
+		searchResults = new ArrayList<Future<Integer>>(numThreads);
+		splitSize = determineSplitSizeFrom(numThreads);
 
-		if (numThreads > array.length) {
-			// Excess number of needed threads. Set upper bound thread count to length of array.
-			numThreads = array.length;
+		callableThreads = createCallableThreads();
+		executeCallableThreads();
+
+		return findDesiredValueFromSearchResults();
+	}
+
+	private ArrayList<Callable<Integer>> createCallableThreads() {
+		ArrayList<Callable<Integer>> callableThreads = new ArrayList<Callable<Integer>>();
+		for (int currentIndex = 0; currentIndex < array.length; currentIndex += splitSize) {
+			int start = currentIndex;
+			int end = Math.min(arrayToSearch.length, currentIndex + splitSize);
+			Callable<Integer> callable = new SubArray(startAndEnd, desiredValue);
+			callableThreads.add(callable);
 		}
+		return callableThreads;
+	}
 
-		// Determine size of subarrays based on the thread count.
-		int splitSize = (int) Math.ceil((double) array.length / (double) numThreads);
-
-		// Create threads to search subarray of size splitSize.
-		for (int index = 0; index < array.length; index += splitSize) {
-			// Determine start and endpoints for each array chunk.
-			int begin = index;
-			int end = Math.min(array.length, index + splitSize);
-
-			// Start the thread and gather the future object for it.
-			Callable<Integer> callable = new SubArray(begin, end, desiredValue);
-			Future<Integer> future = executor.submit(callable);
-			searchResults.add(future);
-		}
-
-		// Initially, assume none of the contenders find the desired value.
+	private int findDesiredValueFrom(ArrayList<Future<Intger>> searchResults) {
 		int contender = FAILED_SEARCH;
-		// Fetch the future result of each thread.
 		for (Future<Integer> result : searchResults) {
 			try {
 				contender = result.get();
@@ -83,5 +85,12 @@ public class PSearch {
 			}
 		}
 		return FAILED_SEARCH;
+	}
+
+	private int determineSplitSizeFrom(int numThreads) {
+		if (numThreads > arrayToSearch.length) {
+			numThreads = arrayToSearch.length;
+		}
+		int splitSize = (int) Math.ceil((double) arrayToSearch.length / (double) numThreads);
 	}
 }
