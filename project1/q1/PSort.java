@@ -1,12 +1,11 @@
-//Name=Julian Domingo, Alec Bargas
-//UT-EID=jad5348, apb973
+//Name=Julian Domingo
+//UT-EID=jad5348
 
 import java.util.*;
 import java.util.concurrent.*;
 
 public class PSort {
-	public static final int MAX_THREADS = Runtime.getRuntime().availableProcessors();
-	private static ExecutorService executor = Executors.newFixedThreadPool(MAX_THREADS);
+	private static ExecutorService executor = Executors.newFixedThreadPool(10000);
 
 	private static class SubArray implements Runnable {
 		private int[] subArray;
@@ -26,7 +25,8 @@ public class PSort {
 				return;
 			}
 
-			if (fourOrLessElements()) {
+			// Instructed to sequentially sort the array at upper bound 4 elements.
+			if (Math.abs(end - begin) < 4) {
 				insertSort(begin, end);
 				return;
 			}
@@ -62,7 +62,6 @@ public class PSort {
 					e.printStackTrace();
 				}
 			}
-
 			// Fork the subarray greater than the pivot.
 			if (end > lowerBound) {
 				SubArray greaterThanPivotArray = new SubArray(subArray, lowerBound, end);			
@@ -78,7 +77,7 @@ public class PSort {
 		}
 
 		private void insertSort(int begin, int end) {
-			for (int runner = 1; runner < subArray.length; runner++) {
+			for (int runner = begin + 1; runner < end + 1; runner++) {
 				for (int switcher = runner; switcher > 0; switcher--) {
 					if (subArray[switcher] < subArray[switcher - 1]) {
 						swap(switcher, switcher - 1);
@@ -95,10 +94,6 @@ public class PSort {
 	 		int temp = subArray[begin];
 	 		subArray[begin] = subArray[end];
 	 		subArray[end] = temp;
-	 	}
-
-	 	private boolean fourOrLessElements() {
-	 		return Math.abs(end - begin) <= 4;
 	 	}
 	}
 
