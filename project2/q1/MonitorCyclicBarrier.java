@@ -1,17 +1,17 @@
 public class MonitorCyclicBarrier {
 	public int numberOfThreads;
-	public static int currentBarrierCapacity; 
+	public static int currentBarrierCapacity = 0;
 
 	public MonitorCyclicBarrier(int numberOfThreads) {
 		this.numberOfThreads = numberOfThreads;
 	}
 
 	public synchronized int await() throws InterruptedException {
-		int currentCapacity = readCurrentBarrierCapacity();
 		currentBarrierCapacity++;
+		int barrierVacanciesLeft = numberOfThreads - currentBarrierCapacity;
 		yieldUntilBarrierFull();
 		tripBarrier();
-		return currentCapacity;
+		return barrierVacanciesLeft;
 	}
 
 	private void yieldUntilBarrierFull() {
@@ -22,7 +22,7 @@ public class MonitorCyclicBarrier {
 
 	private void putThreadToSleep() {
 		try {
-			wait();
+			this.wait();
 		} catch (InterruptedException e) {
 			e.printStackTrace();
 		}
