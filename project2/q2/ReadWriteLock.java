@@ -4,13 +4,13 @@
  *
  */
 
-public class FairReadWriteLock {
+public class ReadWriteLock {
     private static int numberOfReaders;
     private static int numberOfWriters;
     private static int readOrWritesRequested;
     private static int overallTurn;
 
-    public FairReadWriteLock(int numberOfReaders) {
+    public ReadWriteLock(int numberOfReaders) {
         numberOfReaders = 0;
         numberOfWriters = 0;
         overallTurn = 0;
