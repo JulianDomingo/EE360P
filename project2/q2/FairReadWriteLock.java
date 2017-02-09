@@ -1,69 +1,75 @@
+/*
+ * Julian Domingo : jad5348
+ * Alec Bargas : apb973
+ *
+ */
+
 public class FairReadWriteLock {
-	private static int numberOfReaders;
-	private static int numberOfWriters;
-	private static int readOrWritesRequested;
-	private static int overallTurn;
+    private static int numberOfReaders;
+    private static int numberOfWriters;
+    private static int readOrWritesRequested;
+    private static int overallTurn;
 
-	public FairReadWriteLock(int numberOfReaders) {
-		numberOfReaders = 0;
-		numberOfWriters = 0;
-		overallTurn = 0;
-	}
-                        
-	public synchronized void beginRead() {
-		int thisThreadTurn = readOrWritesRequested;
-		readOrWritesRequested++;
+    public FairReadWriteLock(int numberOfReaders) {
+        numberOfReaders = 0;
+        numberOfWriters = 0;
+        overallTurn = 0;
+    }
 
-		while (readRequirementsViolated() || overallTurn > thisThreadTurn) {
-			putThreadToSleep();
-		}
+    public synchronized void beginRead() {
+        int thisThreadTurn = readOrWritesRequested;
+        readOrWritesRequested++;
 
-		overallTurn++;
-		numberOfReaders++;
-		notifyAll();
-	}
-	
-	public synchronized void endRead() {
-		numberOfReaders--;
-		if (numberOfReaders == 0) {
-			notifyAll();
-		}
-	}
-	
-	public synchronized void beginWrite() {
-		int thisThreadTurn = readOrWritesRequested;
-		readOrWritesRequested++;
+        while (readRequirementsViolated() || overallTurn > thisThreadTurn) {
+            putThreadToSleep();
+        }
 
-		while (writeRequirementsViolated() || overallTurn > thisThreadTurn) {
-			putThreadToSleep();
-		}
+        overallTurn++;
+        numberOfReaders++;
+        notifyAll();
+    }
 
-		overallTurn++;
-		numberOfWriters++;
-		notifyAll();
-	}
+    public synchronized void endRead() {
+        numberOfReaders--;
+        if (numberOfReaders == 0) {
+            notifyAll();
+        }
+    }
 
-	private boolean readRequirementsViolated() {
-		if (numberOfWriters > 0) { return true; }
-	}
+    public synchronized void beginWrite() {
+        int thisThreadTurn = readOrWritesRequested;
+        readOrWritesRequested++;
 
-	private boolean writeRequirementsViolated() {
-		if (numberOfReaders > 0 || numberOfWriters > 0) { return true; }
-	}
+        while (writeRequirementsViolated() || overallTurn > thisThreadTurn) {
+            putThreadToSleep();
+        }
 
-	public synchronized void endWrite() {
-		numberOfWriters--;
-		if (numberOfWriters == 0) {
-			notifyAll();
-		}
-	}
+        overallTurn++;
+        numberOfWriters++;
+        notifyAll();
+    }
 
-	private void putThreadToSleep() {
-		try {
-			wait();
-		}
-		catch (InterruptedException e) {
-			e.printStackTrace();
-		}
-	}
+    private boolean readRequirementsViolated() {
+        return numberOfWriters > 0;
+    }
+
+    private boolean writeRequirementsViolated() {
+        return (numberOfReaders > 0 || numberOfWriters > 0);
+    }
+
+    public synchronized void endWrite() {
+        numberOfWriters--;
+        if (numberOfWriters == 0) {
+            notifyAll();
+        }
+    }
+
+    private void putThreadToSleep() {
+        try {
+            wait();
+        }
+        catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+    }
 }

@@ -1,3 +1,9 @@
+/*
+ * Julian Domingo : jad5348
+ * Alec Bargas : apb973
+ *
+ */
+
 public class MonitorCyclicBarrier {
     private int barrierSize;
     private static int currentBarrierCapacity;

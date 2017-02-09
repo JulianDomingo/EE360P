@@ -1,3 +1,9 @@
+/*
+ * Julian Domingo : jad5348
+ * Alec Bargas : apb973
+ *
+ */
+
 public class testBarrier implements Runnable {
 	final static int SIZE = 5;
 	final static int ROUND = 5;
