@@ -3,10 +3,6 @@
  * Alec Bargas : apb973
  *
  */
-
-import java.util.concurrent;
-
-public class Garden {
   // Implement a Garden class which uses ReentrantLock and Condition objects from 
   // java.util.concurrent;
   /*
