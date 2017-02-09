@@ -8,7 +8,7 @@ import java.util.concurrent.Semaphore;
 
 public class CyclicBarrier {
     private Semaphore isBarrierFull;
-    private Semaphore incrementingBarrierCapacity;
+    private Semaphore criticalSection;
 
     private static int currentBarrierCapacity = 0;
     private int barrierSize;
@@ -16,35 +16,32 @@ public class CyclicBarrier {
     public CyclicBarrier(int numberOfThreads) {
         this.barrierSize = numberOfThreads;
         isBarrierFull = new Semaphore(0, true);
-        incrementingBarrierCapacity = new Semaphore(1, true);
+        criticalSection = new Semaphore(1, true);
     }
 
     public int await() throws InterruptedException {
-        int currentCapacity = readCurrentBarrierCapacity();
-        updateCapacityExclusively();
+        criticalSection.acquire();
+        int currentCapacity = currentBarrierCapacity;
+        currentBarrierCapacity++;
+        criticalSection.release();
+
         yieldUntilBarrierFull();
-        tripBarrier();
+
+        if (isBarrierFilled()) {
+            resetCurrentCapacity();
+            tripBarrier();
+        }
         return currentCapacity;
     }
 
-    private int readCurrentBarrierCapacity() {
-        return currentBarrierCapacity;
-    }
-
     private void yieldUntilBarrierFull() {
-        if (currentBarrierCapacity != barrierSize) {
+        if (!isBarrierFilled()) {
             acquireSemaphore(isBarrierFull);
         }
     }
 
-    private void updateCapacityExclusively() {
-        acquireSemaphore(incrementingBarrierCapacity);
-        currentBarrierCapacity++;
-        incrementingBarrierCapacity.release();
-    }
-
     private void tripBarrier() {
-        isBarrierFull.release();
+        isBarrierFull.release(barrierSize - 1);
     }
 
     private void acquireSemaphore(Semaphore semaphore) {
@@ -54,5 +51,13 @@ public class CyclicBarrier {
         catch (InterruptedException e) {
             e.printStackTrace();
         }
+    }
+
+    private void resetCurrentCapacity() {
+        currentBarrierCapacity = 0;
+    }
+
+    private boolean isBarrierFilled() {
+        return currentBarrierCapacity == barrierSize;
     }
 }

@@ -1,48 +1,57 @@
 public class MonitorCyclicBarrier {
-	public int numberOfThreads;
-	public static int currentBarrierCapacity = 0;
+    private int barrierSize;
+    private static int currentBarrierCapacity;
+    private static int resets;
 
-	public MonitorCyclicBarrier(int numberOfThreads) {
-		this.numberOfThreads = numberOfThreads;
-	}
+    public MonitorCyclicBarrier(int numberOfThreads) {
+        this.barrierSize = numberOfThreads;
+        this.currentBarrierCapacity = 0;
+        this.resets = 0;
+    }
 
-	public synchronized int await() throws InterruptedException {
-		currentBarrierCapacity++;
-		int barrierVacanciesLeft = numberOfThreads - currentBarrierCapacity;
-		yieldUntilBarrierFull();
-		tripBarrier();
-		return barrierVacanciesLeft;
-	}
+    public synchronized int await() throws InterruptedException {
+        currentBarrierCapacity++;
 
-	private void yieldUntilBarrierFull() {
-		while (maxCapacityNotReached()) {
-			putThreadToSleep();
-		}
-	}
+        if (maxCapacityReached()) {
+            resetCurrentBarrierCapacity();
+            updateResets();
+            tripBarrier();
+        }
+        else {
+            yieldUntilBarrierFull();
+        }
+        return currentBarrierCapacity;
+    }
 
-	private void putThreadToSleep() {
-		try {
-			this.wait();
-		} catch (InterruptedException e) {
-			e.printStackTrace();
-		}
-	}
+    private void yieldUntilBarrierFull() {
+        int snapShotOfResetsAmount = resets;
+        while (snapShotOfResetsAmount == resets) {
+            putThreadToSleep();
+        }
+    }
 
-	private void tripBarrier() {
-		if (maxCapacityReached()) {
-			notifyAll();
-		}
-	}
+    private void tripBarrier() {
+        notifyAll();
+    }
 
-	private int readCurrentBarrierCapacity() {
-		return currentBarrierCapacity;
-	}
+    private void putThreadToSleep() {
+        try {
+            wait();
+        }
+        catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+    }
 
-	private boolean maxCapacityReached() {
-		return currentBarrierCapacity == numberOfThreads;
-	}
+    private void updateResets() {
+        resets++;
+    }
 
-	private boolean maxCapacityNotReached() {
-		return currentBarrierCapacity < numberOfThreads;
-	}
+    private void resetCurrentBarrierCapacity() {
+        currentBarrierCapacity = 0;
+    }
+
+    private boolean maxCapacityReached() {
+        return currentBarrierCapacity == barrierSize;
+    }
 }
