@@ -21,24 +21,141 @@ public class Garden {
       can use the shovel at any point of time.
   */
     
-  public Garden() {   
+import java.util.concurrent.locks.Condition;
+import java.util.concurrent.locks.ReentrantLock;
 
-  }; 
-
-  public synchronized void startDigging() {   }; 
-  public synchronized void doneDigging() {   }; 
-  public synchronized void startSeeding() {   };
-  public synchronized void doneSeeding() {   }; 
-  public synchronized void startFilling() {   }; 
-  public synchronized void doneFilling() {   }; 
+public class Garden {
+  
+	ReentrantLock shovel, sequencer;
+	Condition fourUnseeded, eightUnfilled, oneUnseeded, oneUnfilled;
+	int holesDug, holesSeeded,holesFilled;
+	
+  public Garden() {
+	  shovel = new ReentrantLock();
+	  fourUnseeded = sequencer.newCondition();
+	  eightUnfilled = sequencer.newCondition();
+	  oneUnseeded = sequencer.newCondition();
+	  oneUnfilled = sequencer.newCondition();
+	  holesDug = 0;
+	  holesSeeded = 0;
+	  holesFilled = 0;
+  }
+  
+  public void startDigging() { 
+	  if(holesDug - holesSeeded >= 4)
+	  {
+		  try {
+			fourUnseeded.await();
+		} catch (InterruptedException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	  }
+	  if(holesDug - holesFilled >= 8)
+	  {
+		  try {
+			eightUnfilled.await();
+		} catch (InterruptedException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	  }
+	  shovel.lock();
+	  try{
+		  holesDug++;
+	  }
+	  finally{
+		  doneDigging();
+	  }
+  } 
+  
+  public void doneDigging() {
+	  sequencer.lock();
+	  try{
+		  oneUnseeded.signal();
+	  }
+	  finally{
+	  	sequencer.unlock();
+	  }
+	  shovel.unlock();
+  }
+  
+  public void startSeeding() {   	 
+	  if(holesDug == holesSeeded)
+	  {
+		  try {
+			  oneUnseeded.await();
+		  } catch (InterruptedException e) {
+			  // TODO Auto-generated catch block
+			  e.printStackTrace();
+		  }
+	  }
+	  holesSeeded++;
+	  doneSeeding();
+  }
+  
+  public void doneSeeding() {
+	  sequencer.lock();
+	  try{
+		  if(holesSeeded + 4 > holesDug)
+		  {
+			  fourUnseeded.signal();
+		  }
+		  oneUnfilled.signal();
+	  }
+	  finally{
+		  sequencer.unlock();
+	  }
+  } 
+  
+  public void startFilling() { 
+	  if(holesFilled == holesSeeded)
+	  {
+		  try {
+			oneUnfilled.await();
+		} catch (InterruptedException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	  }
+	  shovel.lock();
+	  try{
+		  holesFilled++;
+	  }
+	  finally{
+		  doneFilling();
+	  }
+  }   
+  
+  public void doneFilling() {
+	  sequencer.lock();
+	  try{
+		  if(holesFilled + 8 > holesSeeded)
+		  {
+			  eightUnfilled.signal();
+		  }
+		  oneUnfilled.signal();
+	  }
+	  finally{
+		  sequencer.unlock();
+	  }
+	  shovel.unlock();
+  } 
  
-  /*
-  * The following methods return the total number of holes dug, seeded or 
-  * filled by Newton, Benjamin or Mary at the time the methods' are 
-  * invoked on the garden class. */
-  public synchronized int totalHolesDugByNewton() {
-  }; 
-
-  public synchronized int totalHolesSeededByBenjamin() {   }; 
-  public synchronized int totalHolesFilledByMary() {   }; 
+    /*
+    * The following methods return the total number of holes dug, seeded or 
+    * filled by Newton, Benjamin or Mary at the time the methods' are 
+    * invoked on the garden class. */
+   public int totalHolesDugByNewton() {
+	   return holesDug;
+   }
+   
+   public int totalHolesSeededByBenjamin() {
+	   return holesSeeded;
+   }
+   
+   public int totalHolesFilledByMary() {
+	   return holesFilled;
+   }
+   
 }
