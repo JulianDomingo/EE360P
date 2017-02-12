@@ -16,13 +16,12 @@ public class CyclicBarrier {
     public CyclicBarrier(int numberOfThreads) {
         currentBarrierVacancies = numberOfThreads;
         barrierSize = numberOfThreads;
-        isBarrierFull = new Semaphore(0, true);
-        criticalSection = new Semaphore(1, true);
+        isBarrierFull = new Semaphore(0);
+        criticalSection = new Semaphore(1);
     }
 
     public int await() throws InterruptedException {
         criticalSection.acquire();
-        int currentCapacity = currentBarrierVacancies;
         currentBarrierVacancies--;
         criticalSection.release();
 
@@ -32,7 +31,7 @@ public class CyclicBarrier {
             resetCurrentCapacity();
             tripBarrier();
         }
-        return currentCapacity;
+        return currentBarrierVacancies;
     }
 
     private void yieldUntilBarrierFull() {
