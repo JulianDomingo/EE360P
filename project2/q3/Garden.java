@@ -1,3 +1,9 @@
+/*
+ * Julian Domingo : jad5348
+ * Alec Bargas : apb973
+ *
+ */
+
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
 

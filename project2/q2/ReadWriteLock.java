@@ -1,4 +1,9 @@
-package lockTest;
+/*
+ * Julian Domingo : jad5348
+ * Alec Bargas : apb973
+ *
+ */
+
 public class FairReadWriteLock {
     private static int numberOfReaders = 0;
     private static int numberOfWriters = 0;
