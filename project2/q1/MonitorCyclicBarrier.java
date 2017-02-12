@@ -1,22 +1,16 @@
-/*
- * Julian Domingo : jad5348
- * Alec Bargas : apb973
- *
- */
-
 public class MonitorCyclicBarrier {
     private int barrierSize;
-    private static int currentBarrierCapacity;
+    private int currentBarrierVacancies;
     private static int resets;
 
     public MonitorCyclicBarrier(int numberOfThreads) {
-        this.barrierSize = numberOfThreads;
-        this.currentBarrierCapacity = 0;
-        this.resets = 0;
+        barrierSize = numberOfThreads;
+        currentBarrierVacancies = numberOfThreads;
+        resets = 0;
     }
 
     public synchronized int await() throws InterruptedException {
-        currentBarrierCapacity++;
+        currentBarrierVacancies--;
 
         if (maxCapacityReached()) {
             resetCurrentBarrierCapacity();
@@ -26,7 +20,7 @@ public class MonitorCyclicBarrier {
         else {
             yieldUntilBarrierFull();
         }
-        return currentBarrierCapacity;
+        return currentBarrierVacancies;
     }
 
     private void yieldUntilBarrierFull() {
@@ -54,10 +48,10 @@ public class MonitorCyclicBarrier {
     }
 
     private void resetCurrentBarrierCapacity() {
-        currentBarrierCapacity = 0;
+        currentBarrierVacancies = barrierSize;
     }
 
     private boolean maxCapacityReached() {
-        return currentBarrierCapacity == barrierSize;
+        return barrierSize - currentBarrierVacancies == barrierSize;
     }
 }
