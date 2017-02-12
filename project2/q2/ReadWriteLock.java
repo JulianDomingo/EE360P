@@ -1,26 +1,15 @@
-/*
- * Julian Domingo : jad5348
- * Alec Bargas : apb973
- *
- */
-
-public class ReadWriteLock {
-    private static int numberOfReaders;
-    private static int numberOfWriters;
-    private static int readOrWritesRequested;
-    private static int overallTurn;
-
-    public ReadWriteLock(int numberOfReaders) {
-        numberOfReaders = 0;
-        numberOfWriters = 0;
-        overallTurn = 0;
-    }
+package lockTest;
+public class FairReadWriteLock {
+    private static int numberOfReaders = 0;
+    private static int numberOfWriters = 0;
+    private static int readOrWritesRequested = 0;
+    private static int overallTurn = 0;
 
     public synchronized void beginRead() {
         int thisThreadTurn = readOrWritesRequested;
         readOrWritesRequested++;
 
-        while (readRequirementsViolated() || overallTurn > thisThreadTurn) {
+        while (readRequirementsViolated() || overallTurn < thisThreadTurn) {
             putThreadToSleep();
         }
 
@@ -40,7 +29,7 @@ public class ReadWriteLock {
         int thisThreadTurn = readOrWritesRequested;
         readOrWritesRequested++;
 
-        while (writeRequirementsViolated() || overallTurn > thisThreadTurn) {
+        while (writeRequirementsViolated() || overallTurn < thisThreadTurn) {
             putThreadToSleep();
         }
 
