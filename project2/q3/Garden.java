@@ -1,22 +1,3 @@
-/*
- * Julian Domingo : jad5348
- * Alec Bargas : apb973
- *
- */
-  // Implement a Garden class which uses ReentrantLock and Condition objects from 
-  // java.util.concurrent;
-  /*
-
-  (a) Benjamin cannot plant a seed unless at least one empty hole exists and Mary cannot fill
-      a hole unless at least one hole exists in which Benjamin has planted a seed.
-  (b) Newton has to wait for Benjamin if there are 4 holes dug which have not been seeded
-      yet. He also has to wait for Mary if there are 8 unfilled holes. Mary does not care how
-      far Benjamin gets ahead of her.
-  (c) There is only one shovel that can be used to dig and fill holes, and thus Newton and
-      Mary need to coordinate between themselves for using the shovel; ie. only one of them
-      can use the shovel at any point of time.
-  */
-    
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -38,7 +19,7 @@ public class Garden {
   }
   
   public void startDigging() { 
-	  if(holesDug - holesSeeded >= 4)
+	  if(holesDug - holesSeeded == 4)
 	  {
 		  try {
 			fourUnseeded.await();
@@ -47,7 +28,7 @@ public class Garden {
 			e.printStackTrace();
 		}
 	  }
-	  if(holesDug - holesFilled >= 8)
+	  if(holesDug - holesFilled == 8)
 	  {
 		  try {
 			eightUnfilled.await();
@@ -68,7 +49,10 @@ public class Garden {
   public void doneDigging() {
 	  sequencer.lock();
 	  try{
-		  oneUnseeded.signal();
+		  if(holesDug - holesSeeded == 1)
+		  {
+			  oneUnseeded.signal();
+		  }
 	  }
 	  finally{
 	  	sequencer.unlock();
@@ -93,11 +77,14 @@ public class Garden {
   public void doneSeeding() {
 	  sequencer.lock();
 	  try{
-		  if(holesSeeded + 4 > holesDug)
+		  if(holesDug - holesSeeded == 3)
 		  {
 			  fourUnseeded.signal();
 		  }
-		  oneUnfilled.signal();
+		  if(holesSeeded - holesFilled == 1)
+		  {
+			  oneUnfilled.signal();
+		  }
 	  }
 	  finally{
 		  sequencer.unlock();
@@ -126,11 +113,10 @@ public class Garden {
   public void doneFilling() {
 	  sequencer.lock();
 	  try{
-		  if(holesFilled + 8 > holesSeeded)
+		  if(holesDug - holesFilled == 7)
 		  {
 			  eightUnfilled.signal();
 		  }
-		  oneUnfilled.signal();
 	  }
 	  finally{
 		  sequencer.unlock();
