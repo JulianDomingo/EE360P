@@ -1,63 +1,65 @@
 // Julian Domingo
 import java.util.concurrent.*;
 
-public class ConcurrentQueue {
-	private ReentrantLock criticalSection;
-	private Condition emptyQueue;
-	private Node head;
+public class ConcurrentQueue<T> {
+	private ReentrantLock enqueueLock;
+	private ReentrantLock dequeueLock;
+
+	private Node<T> head;
+	private Note<T> tail;
 
 	public ConcurrentQueue() {
-		criticalSection = new ReentrantLock;
-		emptyQueue = criticalSection.newCondition();
+		enqueueLock = new ReentrantLock();
+		dequeueLock = new ReentrantLock();
+		head = new Node<T>(null);
+		head = tail;
 	}
 
-	class Node {
-		private int value;
-		private Node next;
+	class Node<T> {
+		private T value;
+		private Node<T> next;
 		
-		public Node(int value) {
+		public Node(T value) {
 			this.value = value;
 		}
+		
+		public T getValue() {
+			return value;
+		}
 	}
 
-	public void enqueue(int value) {
-		if (head == null) {
-			head = new Node(value);
+	public void enqueue(T value) {
+		if (value == null) {
+			throw new NullPointerException();
 		}
-		else {
-			criticalSection.lock();
-			Node runner = head;
-			while (runner.next != null) {
-				runner = runner.next;
-			}
-			runner.next = new Node(value);
-			criticalSection.unlock();
-		}
+		enqueue.lock();
 		try {
-			emptyQueue.signal();
+			Node<T> newNode = new Node<T>(value);
+			tail.next = newNode;
+			tail = newNode;
 		}
-		catch (InterruptedException e) {
-			e.printStackTrace();
+		finally {
+			enqueue.unlock();
 		}
+	}
+
+	public T dequeue() {
+		T popped;
+		dequeueLock.lock();
+		try {
+			if (isEmpty()) {
+				throw new EmptyException();
+			}
+			popped = head.getValue();
+			head = head.next;
+		}
+		finally {
+			dequeue.unlock();
+		}
+		return popped;
 	}
 		
-	public int dequeue() {
-		if (head == null) {
-			try {
-				emptyQueue.await();
-			}
-			catch (InterruptedException e) {
-				e.printStackTrace();
-			}
-		}
-		else {
-			criticalSection.lock();
-			head = head.next;
-			criticalSection.unlock();	
-		}	
-	}
-
 	public boolean isEmpty() {
-		return head == null;
+		return head.next == null;
 	}
 }
