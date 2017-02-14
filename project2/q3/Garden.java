@@ -15,6 +15,7 @@ public class Garden {
 	
   public Garden() {
 	  shovel = new ReentrantLock();
+	  sequencer = new ReentrantLock();
 	  fourUnseeded = sequencer.newCondition();
 	  eightUnfilled = sequencer.newCondition();
 	  oneUnseeded = sequencer.newCondition();
@@ -27,107 +28,110 @@ public class Garden {
   public void startDigging() { 
 	  if(holesDug - holesSeeded == 4)
 	  {
+		  sequencer.lock();
 		  try {
+			 // System.out.println("dig waiting for seed");
 			fourUnseeded.await();
-		} catch (InterruptedException e) {
+		  } 
+		  catch (InterruptedException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
-		}
+		  }
+		  finally{
+			  sequencer.unlock();
+		  }
 	  }
 	  if(holesDug - holesFilled == 8)
 	  {
+		  sequencer.lock();
 		  try {
+			  //System.out.println("dig waiting for fill");
 			eightUnfilled.await();
-		} catch (InterruptedException e) {
+		  } 
+		  catch (InterruptedException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
-		}
+		  }
+		  finally{
+			  sequencer.unlock();  
+		  }
 	  }
 	  shovel.lock();
-	  try{
-		  holesDug++;
-	  }
-	  finally{
-		  doneDigging();
-	  }
   } 
   
   public void doneDigging() {
 	  sequencer.lock();
 	  try{
-		  if(holesDug - holesSeeded == 1)
-		  {
-			  oneUnseeded.signal();
-		  }
+		  holesDug++;
+		  oneUnseeded.signal();
 	  }
 	  finally{
 	  	sequencer.unlock();
 	  }
 	  shovel.unlock();
+	  //System.out.println("dug");
   }
   
   public void startSeeding() {   	 
 	  if(holesDug == holesSeeded)
 	  {
+		  sequencer.lock();
 		  try {
+		//	  System.out.println("seed waiting for dig");
 			  oneUnseeded.await();
 		  } catch (InterruptedException e) {
 			  // TODO Auto-generated catch block
 			  e.printStackTrace();
 		  }
+		  finally{
+			  sequencer.unlock();
+		  }
 	  }
-	  holesSeeded++;
-	  doneSeeding();
   }
   
   public void doneSeeding() {
 	  sequencer.lock();
 	  try{
-		  if(holesDug - holesSeeded == 3)
-		  {
-			  fourUnseeded.signal();
-		  }
-		  if(holesSeeded - holesFilled == 1)
-		  {
-			  oneUnfilled.signal();
-		  }
+		  holesSeeded++;
+		  fourUnseeded.signal();
+		  oneUnfilled.signal();
 	  }
 	  finally{
 		  sequencer.unlock();
 	  }
+	  //System.out.println("seeded");
   } 
   
   public void startFilling() { 
 	  if(holesFilled == holesSeeded)
 	  {
+		  sequencer.lock();
 		  try {
+		//	  System.out.println("fill waiting for seed");
 			oneUnfilled.await();
-		} catch (InterruptedException e) {
+		  } 
+		  catch (InterruptedException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
-		}
+		  }
+		  finally{
+			  sequencer.unlock();
+		  }
 	  }
 	  shovel.lock();
-	  try{
-		  holesFilled++;
-	  }
-	  finally{
-		  doneFilling();
-	  }
   }   
   
   public void doneFilling() {
 	  sequencer.lock();
 	  try{
-		  if(holesDug - holesFilled == 7)
-		  {
-			  eightUnfilled.signal();
-		  }
+		  holesFilled++;
+		  eightUnfilled.signal();
 	  }
 	  finally{
 		  sequencer.unlock();
 	  }
 	  shovel.unlock();
+	  //System.out.println("filled");
   } 
  
     /*
