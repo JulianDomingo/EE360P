@@ -13,7 +13,7 @@ public class Item {
     this.quantity = quantity;
   }
 
-  String getItemName() {
+  synchronized String getItemName() {
     return itemName;
   }
 
