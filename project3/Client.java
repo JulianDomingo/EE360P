@@ -24,14 +24,17 @@ public class Client {
         Scanner scanner = new Scanner(System.in);
 
         while (scanner.hasNextLine()) {
+            String serverResponse = "";
             String command = scanner.nextLine();
             String[] arguments = command.split(" ");
 
             if (arguments[0].contains("setmode")) {
-                currentProtocol = arguments[0];
+                currentProtocol = arguments[1];
+                System.out.println("Current protocol for process is: " + currentProtocol);
             }
-
-            String serverResponse = send(hostAddress, portNumberTCP, portNumberUDP, command, currentProtocol);
+            else {
+                serverResponse = send(hostAddress, portNumberTCP, portNumberUDP, command, currentProtocol);
+            }
 
             if (arguments[0].contains("list")) {
                 serverResponse = reformatServerResponse(serverResponse);
