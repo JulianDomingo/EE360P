@@ -62,7 +62,7 @@ public class Client {
 	}
   
 	private static String sendTCP(String hostName, int portNumberTCP, String command) {
-		String response;  
+		String responseOfTCPServer;  
 		Scanner scanner;
 		PrintStream printStream;
 
@@ -72,9 +72,9 @@ public class Client {
 			printStream = new PrintStream(clientSocket.getOutputStream());
 			printStream.println(command);
 			printStream.flush();
-			response = scanner.nextLine();
+			responseOfTCPServer = scanner.nextLine();
 			clientSocket.close();
-			return response;
+			return responseOfTCPServer;
 		} 
 		catch(IOException e) {
 			e.printStackTrace();
