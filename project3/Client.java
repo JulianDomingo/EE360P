@@ -8,87 +8,113 @@ import java.io.*;
 import java.util.Scanner;
 
 public class Client {
-	public static void main(String[] args) {
-	    String hostAddress;
-	    int portNumberTCP;
-	    int portNumberUDP;
+    public static void main(String[] args) {
+        String hostAddress;
+        String currentProtocol;
+        int portNumberTCP;
+        int portNumberUDP;
 
-	    hostAddress = args[0];
-	    portNumberTCP = Integer.parseInt(args[1]);
-	    portNumberUDP = Integer.parseInt(args[2]);
+        hostAddress = args[0];
+        portNumberTCP = Integer.parseInt(args[1]);
+        portNumberUDP = Integer.parseInt(args[2]);
+        currentProtocol = "T";
 
-	    Scanner scanner = new Scanner(System.in);
+        System.out.print("Enter a command: ");
 
-	    while (sc.hasNextLine()) {
-			String command = scanner.nextLine();
-			String[] arguments = command.split(" ");
+        Scanner scanner = new Scanner(System.in);
 
-			String serverResponse = send(hostAddress, portNumberTCP, portNumberUDP, command, arguments[arguments.length - 1]);
-			System.out.println(serverResponse);
-	    }
-	}
+        while (scanner.hasNextLine()) {
+            String command = scanner.nextLine();
+            String[] arguments = command.split(" ");
 
-	private static String sendUDP(String hostName, int portNumberUDP, String command) {
-		byte[] receivingBuffer = new byte[1024];
-		DatagramPacket sendingPacket;
-		DatagramPacket receivingPacket;
-		DatagramSocket dataSocket = null;
-		
-		try {
-			InetAddress iNetAddress = InetAddress.getByName(hostName);
-			dataSocket = new DatagramSocket();
-			byte[] sendingBuffer = new byte[command.length()];
-			sendingBuffer = command.getBytes();
-			sendingPacket = new DatagramPacket(sendingBuffer, sendingBuffer.length, iNetAddress, portNumberUDP);
-			dataSocket.send(sendingPacket);
-			receivingPacket = new DatagramPacket(recevingBuffer, receivingBuffer.length);
-			dataSocket.receive(receivingPacket);
-			return new String(receivingPacket.getData(), 0, receivingPacket.getLength());
-		} 
-		catch(UnknownHostException e) {
-			e.printStackTrace();
-		} 
-		catch(SocketException e) {
-			e.printStackTrace();
-		} 
-		catch(IOException e) {
-			e.printStackTrace();
-		} 
-		finally {
-			dataSocket.close();
-		}
-		
-		return null;
-	}
-  
-	private static String sendTCP(String hostName, int portNumberTCP, String command) {
-		String responseOfTCPServer;  
-		Scanner scanner;
-		PrintStream printStream;
+            if (arguments[0].contains("setmode")) {
+                currentProtocol = arguments[0];
+            }
 
-		try {  
-			Socket clientSocket = new Socket(hostName, portNumberTCP);  
-			scanner = new Scanner(clientSocket.getInputStream());
-			printStream = new PrintStream(clientSocket.getOutputStream());
-			printStream.println(command);
-			printStream.flush();
-			responseOfTCPServer = scanner.nextLine();
-			clientSocket.close();
-			return responseOfTCPServer;
-		} 
-		catch(IOException e) {
-			e.printStackTrace();
-		}
+            String serverResponse = send(hostAddress, portNumberTCP, portNumberUDP, command, currentProtocol);
 
-		return null;
-	} 
-  
-	private static String send(String hostAddress, int portNumberTCP, int portNumberUDP, String command, String protocol) {
-		if (protocol.equals("U")) {
-	  		return sendUDP(hostAddress, portNumberUDP, command);
-	  	} 
-	  	else if (protocol.equals("T")) {
-	  		return sendTCP(hostAddress, portNumberTCP, command);
-	  	}
-	}
+            if (arguments[0].contains("list")) {
+                serverResponse = reformatServerResponse(serverResponse);
+            }
+
+            System.out.println(serverResponse);
+            System.out.print("Enter a command: ");
+        }
+    }
+
+    private static String reformatServerResponse(String serverResponse) {
+        String reformattedResponse = "";
+        String[] items = serverResponse.split("\\$");
+
+        for (String item : items) {
+            reformattedResponse += item;
+            reformattedResponse += "\r\n";
+        }
+
+        return reformattedResponse;
+    }
+
+    private static String sendUDP(String hostName, int portNumberUDP, String command) {
+        byte[] receivingBuffer = new byte[1024];
+        DatagramPacket sendingPacket;
+        DatagramPacket receivingPacket;
+        DatagramSocket dataSocket = null;
+
+        try {
+            InetAddress iNetAddress = InetAddress.getByName(hostName);
+            dataSocket = new DatagramSocket();
+            byte[] sendingBuffer = new byte[command.length()];
+            sendingBuffer = command.getBytes();
+            sendingPacket = new DatagramPacket(sendingBuffer, sendingBuffer.length, iNetAddress, portNumberUDP);
+            dataSocket.send(sendingPacket);
+            receivingPacket = new DatagramPacket(receivingBuffer, receivingBuffer.length);
+            dataSocket.receive(receivingPacket);
+            return new String(receivingPacket.getData(), 0, receivingPacket.getLength());
+        }
+        catch(UnknownHostException e) {
+            e.printStackTrace();
+        }
+        catch(SocketException e) {
+            e.printStackTrace();
+        }
+        catch(IOException e) {
+            e.printStackTrace();
+        }
+        finally {
+            dataSocket.close();
+        }
+
+        return null;
+    }
+
+    private static String sendTCP(String hostName, int portNumberTCP, String command) {
+        String responseOfTCPServer;
+        Scanner scanner;
+        PrintStream printStream;
+
+        try {
+            Socket clientSocket = new Socket(hostName, portNumberTCP);
+            scanner = new Scanner(clientSocket.getInputStream());
+            printStream = new PrintStream(clientSocket.getOutputStream());
+            printStream.println(command);
+            printStream.flush();
+            responseOfTCPServer = scanner.nextLine();
+            clientSocket.close();
+            return responseOfTCPServer;
+        }
+        catch(IOException e) {
+            e.printStackTrace();
+        }
+
+        return null;
+    }
+
+    private static String send(String hostAddress, int portNumberTCP, int portNumberUDP, String command, String currentProtocol) {
+        if (currentProtocol.equals("U")) {
+            return sendUDP(hostAddress, portNumberUDP, command);
+        }
+        else {
+            return sendTCP(hostAddress, portNumberTCP, command);
+        }
+    }
 }

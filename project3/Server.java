@@ -1,3 +1,5 @@
+
+
 /**
  * Julian Domingo : jad5348
  * Alec Bargas : apb973
@@ -10,329 +12,338 @@ import java.util.concurrent.*;
 import java.lang.StringBuilder;
 
 public class Server {
-	private static ExecutorService es;
-	private static ArrayList<Item> inventory;
-	private static ArrayList<User> clients;
-  
-  	public Server() {
-  		inventory = new ArrayList<Item>();
-  		clients = new ArrayList<User>();
-  		es = Executors.newCachedThreadPool(); 
-  	} 
+    private static ExecutorService es;
+    private static ArrayList<Item> inventory;
+    private static ArrayList<User> clients;
 
-  	// Input arguments are as follows:
-  	// args[0] : TCP Port Number
-  	// args[1] : UDP Port Number
-  	// args[2] : Input File
-	public static void main (String[] args) {
-		int portNumberTCP
-		int portNumberUDP;
+    // Input arguments are as follows:
+    // args[0] : TCP Port Number
+    // args[1] : UDP Port Number
+    // args[2] : Input File
+    public static void main(String[] args) {
+        int portNumberTCP;
+        int portNumberUDP;
+        inventory = new ArrayList<Item>();
+        clients = new ArrayList<User>();
+        es = Executors.newCachedThreadPool();
 
-		portNumberTCP = Integer.parseInt(args[0]);
-		portNumberUDP = Integer.parseInt(args[1]);
-		String fileName = args[2];
+        portNumberTCP = Integer.parseInt(args[0]);
+        portNumberUDP = Integer.parseInt(args[1]);
+        String fileName = args[2];
 
-		parse(fileName);
+        parse(fileName);
 
-		Thread threadForTCP = makeTCPThread(portNumberTCP);
-		Thread threadForUDP = makeUDPThread(portNumberUDP);
+        Thread threadForTCP = makeTCPThread(portNumberTCP);
+        Thread threadForUDP = makeUDPThread(portNumberUDP);
 
-		threadForTCP.start();	
-		threadForUDP.start();
-	}
-  
-	private static void TCPServer(int portNumber) throws IOException {
-		String command;
-		Scanner scanner;
-		PrintStream printStream;
+        threadForTCP.start();
+        threadForUDP.start();
+    }
 
-		try {
-			ServerSocket serverSocket = new ServerSocket(portNumber);
-			while (true) {
-				Socket connectionSocket = serverSocket.accept();
-				scanner = new Scanner(connectionSocket.getInputStream());
-				printStream = new PrintStream(connectionSocket.getOutputStream());
-				command = scanner.nextLine();
-				Command callableCommand = new Command(command);
-				Future<String> result = es.submit(callableCommand);
-				String futureResult = result.get();
-				printStream.println(futureResult);      
-			}
-		} 
-		catch(IOException e) {
-			e.printStackTrace();
-		} 
-		catch(InterruptedException e) {
-			e.printStackTrace();
-		} 
-		catch(ExecutionException e) {
-			e.printStackTrace();
-		}
-	}
-  
-	private static void UDPServer(int portNumber) throws IOException {
-		String command;
-		DatagramPacket receivingPacket;
-		DatagramPacket sendingPacket;
-		
-		try {
-			DatagramSocket datagramSocket = new DatagramSocket(portNumber);
-			byte[] receivingBuffer = new byte[1024];
-			byte[] sendingBuffer = new byte[1024];
-			while (true) {
-				receivingPacket = new DatagramPacket(receivingBuffer, receivingBuffer.length);
-				datagramSocket.receive(receivingPacket);
-				command = new String(receivingPacket.getData(), 0, receivingPacket.getLength());
-				Command callableCommand = new Command(command);
-				Future<String> result = es.submit(callableCommand);
-				String futureResult = result.get();
-				sendingBuffer = new byte[futureResult.length()];
-				sendingBuffer = futureResult.getBytes();
-				sendingPacket = new DatagramPacket(sendingBuffer, 
-												   sendingBuffer.length, 
-												   receivingPacket.getAddress(),
-												   receivingPacket.getPort());
-				datagramSocket.send(sendingPacket);
-			}
-		} 
-		catch (SocketException e) {
-			e.printStackTrace();
-		} 
-		catch (IOException e) {
-			e.printStackTrace();
-		} 
-		catch (InterruptedException e) {
-			e.printStackTrace();
-		} 
-		catch (ExecutionException e) {
-			e.printStackTrace();
-		}
-	}
-  
-	public static String execute(String command) {
-		String arguments[] = command.split(" ");
+    private static void TCPServer(int portNumber) throws IOException {
+        String command;
+        Scanner scanner;
+        PrintStream printStream;
 
-		switch (arguments[0]) {
-			case "purchase":
-				return purchase(arguments[1], arguments[2], Integer.parseInt(arguments[3]));
-			case "cancel":
-				return cancel(Integer.parseInt(arguments[1]));
-			case "search":
-				return search(arguments[1]);
-			case "list":
-				return list();
-			default:
-				throw new IllegalArgumentException("Invalid command '" + arguments[0] + "'.");
-		}
-	}
-  
-	private static String purchase(String userName, String productName, int quantity) {
-		User user = findUserThrough(userName);
+        try {
+            ServerSocket serverSocket = new ServerSocket(portNumber);
+            while (true) {
+                Socket connectionSocket = serverSocket.accept();
+                scanner = new Scanner(connectionSocket.getInputStream());
+                printStream = new PrintStream(connectionSocket.getOutputStream());
+                command = scanner.nextLine();
+                Command callableCommand = new Command(command);
+                Future<String> result = es.submit(callableCommand);
+                String futureResult = result.get();
+                printStream.println(futureResult);
+            }
+        }
+        catch(IOException e) {
+            e.printStackTrace();
+        }
+        catch(InterruptedException e) {
+            e.printStackTrace();
+        }
+        catch(ExecutionException e) {
+            e.printStackTrace();
+        }
+    }
 
-		if (isNewCustomer(user)) {
-			clients.add(new User(userName));
-			user = clients.get(clients.size());
-		}
+    private static void UDPServer(int portNumber) throws IOException {
+        String command;
+        DatagramPacket receivingPacket;
+        DatagramPacket sendingPacket;
 
-		if (!existsInInventory(productName)) {
-			return "Not Available - We do not sell this product.";
-		}
-		else if (!inventoryHasEnoughOf(productName, quantity)) {
-			return "Not Available - Not enough items.";
-		}
+        try {
+            DatagramSocket datagramSocket = new DatagramSocket(portNumber);
+            byte[] receivingBuffer = new byte[1024];
+            byte[] sendingBuffer = new byte[1024];
+            while (true) {
+                receivingPacket = new DatagramPacket(receivingBuffer, receivingBuffer.length);
+                datagramSocket.receive(receivingPacket);
+                command = new String(receivingPacket.getData(), 0, receivingPacket.getLength());
+                Command callableCommand = new Command(command);
+                Future<String> result = es.submit(callableCommand);
+                String futureResult = result.get();
+                sendingBuffer = new byte[futureResult.length()];
+                sendingBuffer = futureResult.getBytes();
+                sendingPacket = new DatagramPacket(sendingBuffer,
+                        sendingBuffer.length,
+                        receivingPacket.getAddress(),
+                        receivingPacket.getPort());
+                datagramSocket.send(sendingPacket);
+            }
+        }
+        catch (SocketException e) {
+            e.printStackTrace();
+        }
+        catch (IOException e) {
+            e.printStackTrace();
+        }
+        catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+        catch (ExecutionException e) {
+            e.printStackTrace();
+        }
+    }
 
-		Order newOrder = new Order(productName, quantity);
-		user.addOrder(newOrder);
+    public static String execute(String command) {
+        String arguments[] = command.split(" ");
 
-		Item purchasedItem = findItem(productName);
-		purchasedItem.purchaseQuantityOf(quantity);
+        switch (arguments[0]) {
+            case "purchase":
+                return purchase(arguments[1], arguments[2], Integer.parseInt(arguments[3]));
+            case "cancel":
+                return cancel(Integer.parseInt(arguments[1]));
+            case "search":
+                return search(arguments[1]);
+            case "list":
+                return list();
+            default:
+                throw new IllegalArgumentException("Invalid command '" + arguments[0] + "'.");
+        }
+    }
 
-		int orderID = obtainOrderID(user);
+    private static String purchase(String userName, String productName, int quantity) {
+        User user = findUserThroughName(userName);
 
-		return "Your order has been placed, " + orderID + " " + userName + " " + productName + " " + quantity + ".";
-	}
-  
-	private static String cancel(int orderID) {
-		User user = findUserThrough(orderID);
-		if (user == null) {
-			return orderID + " not found, no such order.";
-		}
+        if (isNewCustomer(user)) {
+            clients.add(new User(userName));
+            user = clients.get(clients.size() - 1);
+        }
 
-		Order cancelledOrder = user.getOrder(orderID);
+        if (!existsInInventory(productName)) {
+            return "Not Available - We do not sell this product.";
+        }
+        else if (!inventoryHasEnoughOf(productName, quantity)) {
+            return "Not Available - Not enough items.";
+        }
 
-		removeItemFrom(cancelledOrder);
-		user.removeOrder(orderID);
+        Order newOrder = new Order(productName, quantity);
+        user.addOrder(newOrder);
 
-		return "Order " + orderID + " is cancelled.";
-	}
+        Item purchasedItem = findItem(productName);
+        purchasedItem.purchaseQuantityOf(quantity);
 
-	private static String search(String userName) {
-		User user = findUserThrough(userName);
+        int orderID = newOrder.getID();
 
-		if (!user.hasPlacedOrders()) { 
-			return "No order found for " + userName + ".";
-		}
+        return "Your order has been placed, " + orderID + " " + userName + " " + productName + " " + quantity + ".";
+    }
 
-		StringBuilder orderList = new StringBuilder("");
+    private static String cancel(int orderID) {
+        User user = findUserThroughID(orderID);
+        if (user == null) {
+            return orderID + " not found, no such order.";
+        }
 
-		for (int order = 0; order < user.getOrderHistory().size(); order++) {
-			orderList.append(Integer.toString(user.getOrderHistory().get(order).getId()));
-			orderList.append(", ");
-			orderList.append(user.getOrderHistory().get(order).getProductName())
-			orderList.append(", ");
-			orderList.append(Integer.toString(user.getOrderHistory().get(order).getQuantity()));
-			orderList.append("\n");
-		}
+        Order cancelledOrder = user.getOrder(orderID);
 
-		return orderList.toString();
-	}
-  
-	private static String list() {
-		StringBuilder inventoryString = new StringBuilder("");
+        removeItemFrom(cancelledOrder);
+        user.removeOrder(orderID);
 
-		for (Item item : inventory) {
-			inventoryString.append(item.getItemName());
-			inventoryString.append(" ");
-			inventoryString.append(Integer.toString(item.getCurrentQuantity()));
-			inventoryString.append("\n");
-		}
+        return "Order " + orderID + " is cancelled.";
+    }
 
-		return inventoryString.toString();
-	}
+    private static String search(String userName) {
+        User user = findUserThroughName(userName);
 
-	public static void parse(String fileName) {
-	    try {
-			addItemsToInventoryFrom(fileName);
-	    } 
-	    catch (FileNotFoundException e) {
-	    	System.out.println("File does not exist.");
-		} 
-		catch (IOException e) {
-			e.printStackTrace();
-		}
-	}
+        if (!user.hasPlacedOrders()) {
+            return "No order found for " + userName + ".";
+        }
 
-	private void addItemsToInventoryFrom(String fileName) {
-		BufferedReader bufferedReader = new BufferedReader(new FileReader(fileName));
-		String inputLine = bufferedReader.readLine();
-      
-		while (inputLine != null) {
-	    	String[] arguments = fileRead.split(" ");
-	    	Item item = formItemFrom(arguments);
-	    	inventory.add(item);
-	    	inputLine = bufferedReader.readLine();
-		}
+        StringBuilder orderList = new StringBuilder("");
 
-		bufferedReader.close();
-	}
+        for (int order = 0; order < user.getOrderHistory().size(); order++) {
+            // TODO: Change to regular string concat
+            orderList.append(Integer.toString(user.getOrderHistory().get(order).getID()));
+            orderList.append(", ");
+            orderList.append(user.getOrderHistory().get(order).getProductName());
+            orderList.append(", ");
+            orderList.append(Integer.toString(user.getOrderHistory().get(order).getQuantity()));
+            orderList.append("\n");
+        }
 
-	private Item findItem(String productName) {
-		for (Item item : inventory) {
-			if (item.getItemName().equals(productName)) {
-				return item;
-			}
-		}
-		return null;
-	}
+        return orderList.toString();
+    }
 
-	private int obtainOrderID(User user) {
-		Order order = user.getOrderHistory().get(user.getOrderHistory().size());
-		return order.getID();
-	}
+    private static String list() {
+        String inventoryString = "";
 
-	private boolean isNewCustomer(String userName) {
-		return userName == null;
-	}
+        for (Item item : inventory) {
+            inventoryString += item.getItemName();
+            inventoryString += " ";
+            inventoryString += Integer.toString(item.getCurrentQuantity());
+            inventoryString += "$";
+        }
+ 
+        return inventoryString;
+    }
 
-	private boolean inventoryHasEnoughOf(String productName, int desiredQuantity) {
-		for (Item item : inventory) {
-			if (item.getItemName().equals(productName) &&
-				item.getCurrentQuantity() < desiredQuantity)
-			{
-				return false;
-			}
-		}
-		return true;
-	}
+    public static void parse(String fileName) {
+        try {
+            addItemsToInventoryFrom(fileName);
+        }
+        catch (FileNotFoundException e) {
+            System.out.println("File does not exist.");
+        }
+        catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
 
-	private boolean existsInInventory(String productName) {
-		for (Item item : inventory) {
-			if (item.getItemName().equals(productName)) {
-				return true;
-			}
-		}
-		return false;
-	}
+    private static void addItemsToInventoryFrom(String fileName) throws IOException {
+        BufferedReader bufferedReader = new BufferedReader(new FileReader(fileName));
+        String inputLine = bufferedReader.readLine();
 
-	private void removeItemFrom(Order cancelledOrder) {
-		for (Item item : inventory) {
-			if (item.getItemName().equals(cancelledOrder.getProductName())) {
-				item.returnQuantityOf(cancelledOrder.getQuantity());
-			}
-		}
-	}
+        while (inputLine != null) {
+            String[] arguments = inputLine.split(" ");
+            Item item = formItemFrom(arguments);
+            inventory.add(item);
+            inputLine = bufferedReader.readLine();
+        }
 
-	private User findUserThrough(String userName) {
-		for (User user : clients) {
-			if (user.getusername.equals(userName)) {
-				return user;
-			}
-		}
-		throw new Exception("User does not exist.");
-	}
+        bufferedReader.close();
+    }
 
-	private Item formItemFrom(String[] arguments) {
-		return new Item(arguments[0], Integer.parseInt(arguments[1]));
-	}
+    private static Item findItem(String productName) {
+        for (Item item : inventory) {
+            if (item.getItemName().equals(productName)) {
+                return item;
+            }
+        }
+        return null;
+    }
 
-	private Thread makeTCPThread(portNumber) {
-		return new Thread() {
-			public void run() {
-				beginTCPServer(portNumber);
-			}
-		}
-	}
+    private static int obtainOrderID(User user) {
+        Order order = user.getOrderHistory().get(user.getOrderHistory().size());
+        return order.getID();
+    }
 
-	private Thread makeUDPThread(portNumber) {
-		return new Thread() {
-			public void run() {
-				beginUDPServer(portNumber);
-			}
-		}
-	}
+    private static boolean isNewCustomer(User user) {
+        return user == null;
+    }
 
-	private void beginTCPServer(int portNumber) {
-		try {
-			TCPServer(portNumber);
-		}
-		catch (IOException e) {
-			e.printStackTrace();
-		}
-	}
+    private static boolean inventoryHasEnoughOf(String productName, int desiredQuantity) {
+        for (Item item : inventory) {
+            if (item.getItemName().equals(productName) &&
+                    item.getCurrentQuantity() < desiredQuantity)
+            {
+                return false;
+            }
+        }
+        return true;
+    }
 
-	private void beginUDPServer(int portNumber) {
-		try {
-			UDPServer(portNumber);
-		}
-		catch (IOException e) {
-			e.printStackTrace();
-		}
-	}
+    private static boolean existsInInventory(String productName) {
+        for (Item item : inventory) {
+            if (item.getItemName().equals(productName)) {
+                return true;
+            }
+        }
+        return false;
+    }
 
-	static public class Command implements Callable<String> {
-		private String command;
+    private static void removeItemFrom(Order cancelledOrder) {
+        for (Item item : inventory) {
+            if (item.getItemName().equals(cancelledOrder.getProductName())) {
+                item.returnQuantityOf(cancelledOrder.getQuantity());
+            }
+        }
+    }
 
-		public Command(String command) {
-			this.command = command;
-		}
+    private static User findUserThroughID(int orderID) {
+        for (User user : clients) {
+            for (Order order : user.getOrderHistory()) {
+                if (order.getID() == orderID) {
+                    return user;
+                }
+            }
+        }
+        return null;
+    }
 
-		public String getString() {
-			return command;
-		}
+    private static User findUserThroughName(String userName) {
+        for (User user : clients) {
+            if (user.getUsername().equals(userName)) {
+                return user;
+            }
+        }
+        return null;
+    }
 
-		@Override
-		public String call() throws Exception {
-			return execute(command);
-		}
-	}
+    private static Item formItemFrom(String[] arguments) {
+        return new Item(arguments[0], Integer.parseInt(arguments[1]));
+    }
+
+    private static Thread makeTCPThread(int portNumber) {
+        return new Thread() {
+            public void run() {
+                beginTCPServer(portNumber);
+            }
+        };
+    }
+
+    private static Thread makeUDPThread(int portNumber) {
+        return new Thread() {
+            public void run() {
+                beginUDPServer(portNumber);
+            }
+        };
+    }
+
+    private static void beginTCPServer(int portNumber) {
+        try {
+            TCPServer(portNumber);
+        }
+        catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private static void beginUDPServer(int portNumber) {
+        try {
+            UDPServer(portNumber);
+        }
+        catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    static public class Command implements Callable<String> {
+        private String command;
+
+        public Command(String command) {
+            this.command = command;
+        }
+
+        public String getString() {
+            return command;
+        }
+
+        @Override
+        public String call() throws Exception {
+            return execute(command);
+        }
+    }
 }
