@@ -8,7 +8,7 @@ import java.io.*;
 import java.util.Scanner;
 
 public class Client {
-	private static String sendUDP(String hostName, int portNumberUDP, String command) {
+	private static void sendUDP(String hostName, int portNumberUDP, String command) {
 		byte[] receivingBuffer = new byte[1024];
 		DatagramPacket sendingPacket;
 		DatagramPacket receivingPacket;
@@ -37,11 +37,9 @@ public class Client {
 		finally {
 			dataSocket.close();
 		}
-		
-		return null;
 	}
   
-	private static String sendTCP(String hostName, int portNumberTCP, String command) {
+	private static void sendTCP(String hostName, int portNumberTCP, String command) {
 		String response;  
 		Scanner scanner;
 		PrintStream printStream;
@@ -59,16 +57,14 @@ public class Client {
 		catch(IOException e) {
 			e.printStackTrace();
 		}
-
-		return null;
 	} 
   
-	private static String send(String hostAddress, int portNumberTCP, int portNumberUDP, String command, String protocol) {
+	private static void send(String hostAddress, int portNumberTCP, int portNumberUDP, String command, String protocol) {
 		if (protocol.equals("U")) {
-	  		return sendUDP(hostAddress, portNumberUDP, command);
+	  		sendUDP(hostAddress, portNumberUDP, command);
 	  	} 
 	  	else if (protocol.equals("T")) {
-	  		return sendTCP(hostAddress, portNumberTCP, command);
+	  		sendTCP(hostAddress, portNumberTCP, command);
 	  	}
 	}
   
@@ -87,8 +83,7 @@ public class Client {
 			String command = scanner.nextLine();
 			String[] arguments = command.split(" ");
 
-			String serverResponse = send(hostAddress, portNumberTCP, portNumberUDP, command, arguments[arguments.length - 1]);
-			System.out.println(serverResponse);
+			send(hostAddress, portNumberTCP, portNumberUDP, command, arguments[arguments.length - 1]);
 	    }
 	}
 
