@@ -1,5 +1,3 @@
-
-
 /**
  * Julian Domingo : jad5348
  * Alec Bargas : apb973
