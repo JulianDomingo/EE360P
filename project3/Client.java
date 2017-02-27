@@ -30,7 +30,7 @@ public class Client {
 
             if (arguments[0].contains("setmode")) {
                 currentProtocol = arguments[1];
-                System.out.println("Current protocol for process is: " + currentProtocol);
+                System.out.println("Current protocol for process is: " + currentProtocol.toUpperCase());
             }
             else {
                 serverResponse = send(hostAddress, portNumberTCP, portNumberUDP, command, currentProtocol);
@@ -66,8 +66,7 @@ public class Client {
         try {
             InetAddress iNetAddress = InetAddress.getByName(hostName);
             dataSocket = new DatagramSocket();
-            byte[] sendingBuffer = new byte[command.length()];
-            sendingBuffer = command.getBytes();
+            byte[] sendingBuffer = command.getBytes();
             sendingPacket = new DatagramPacket(sendingBuffer, sendingBuffer.length, iNetAddress, portNumberUDP);
             dataSocket.send(sendingPacket);
             receivingPacket = new DatagramPacket(receivingBuffer, receivingBuffer.length);
@@ -113,11 +112,9 @@ public class Client {
     }
 
     private static String send(String hostAddress, int portNumberTCP, int portNumberUDP, String command, String currentProtocol) {
-        if (currentProtocol.equals("U")) {
+        if (currentProtocol.toUpperCase().equals("U")) {
             return sendUDP(hostAddress, portNumberUDP, command);
         }
-        else {
-            return sendTCP(hostAddress, portNumberTCP, command);
-        }
+        return sendTCP(hostAddress, portNumberTCP, command);
     }
 }
