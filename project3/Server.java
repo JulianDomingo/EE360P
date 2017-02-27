@@ -21,9 +21,9 @@ public class Server {
   	} 
 
   	// Input arguments are as follows:
-  	// 1. TCP Port Number
-  	// 2. UDP Port Number
-  	// 3. Input File
+  	// args[0] : TCP Port Number
+  	// args[1] : UDP Port Number
+  	// args[2] : Input File
 	public static void main (String[] args) {
 		int portNumberTCP
 		int portNumberUDP;
@@ -76,12 +76,12 @@ public class Server {
 		DatagramPacket sendingPacket;
 		
 		try {
-			DatagramSocket dataSocket = new DatagramSocket(portNumber);
+			DatagramSocket datagramSocket = new DatagramSocket(portNumber);
 			byte[] receivingBuffer = new byte[1024];
 			byte[] sendingBuffer = new byte[1024];
 			while (true) {
 				receivingPacket = new DatagramPacket(receivingBuffer, receivingBuffer.length);
-				dataSocket.receive(receivingPacket);
+				datagramSocket.receive(receivingPacket);
 				command = new String(receivingPacket.getData(), 0, receivingPacket.getLength());
 				Command callableCommand = new Command(command);
 				Future<String> result = es.submit(callableCommand);
@@ -92,7 +92,7 @@ public class Server {
 												   sendingBuffer.length, 
 												   receivingPacket.getAddress(),
 												   receivingPacket.getPort());
-				dataSocket.send(sendingPacket);
+				datagramSocket.send(sendingPacket);
 			}
 		} 
 		catch (SocketException e) {
