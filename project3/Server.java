@@ -288,7 +288,7 @@ public class Server {
 	private Thread makeTCPThread(portNumber) {
 		return new Thread() {
 			public void run() {
-				instantiateTCPServer(portNumber);
+				beginTCPServer(portNumber);
 			}
 		}
 	}
@@ -296,12 +296,12 @@ public class Server {
 	private Thread makeUDPThread(portNumber) {
 		return new Thread() {
 			public void run() {
-				instantiateUDPServer(portNumber);
+				beginUDPServer(portNumber);
 			}
 		}
 	}
 
-	private void instantiateTCPServer(int portNumber) {
+	private void beginTCPServer(int portNumber) {
 		try {
 			TCPServer(portNumber);
 		}
@@ -310,7 +310,7 @@ public class Server {
 		}
 	}
 
-	private void instantiateUDPServer(int portNumber) {
+	private void beginUDPServer(int portNumber) {
 		try {
 			UDPServer(portNumber);
 		}
