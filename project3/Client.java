@@ -8,25 +8,6 @@ import java.io.*;
 import java.util.Scanner;
 
 public class Client {
-	public static void main(String[] args) {
-	    String hostAddress;
-	    int portNumberTCP;
-	    int portNumberUDP;
-
-	    hostAddress = args[0];
-	    portNumberTCP = Integer.parseInt(args[1]);
-	    portNumberUDP = Integer.parseInt(args[2]);
-
-	    Scanner scanner = new Scanner(System.in);
-
-	    while (sc.hasNextLine()) {
-			String command = scanner.nextLine();
-			String[] arguments = command.split(" ");
-
-			send(hostAddress, portNumberTCP, portNumberUDP, command, arguments[arguments.length - 1]);
-	    }
-	}
-
 	private static String sendUDP(String hostName, int portNumberUDP, String command) {
 		byte[] receivingBuffer = new byte[1024];
 		DatagramPacket sendingPacket;
@@ -56,9 +37,11 @@ public class Client {
 		finally {
 			dataSocket.close();
 		}
+		
+		return null;
 	}
   
-	private static void sendTCP(String hostName, int portNumberTCP, String command) {
+	private static String sendTCP(String hostName, int portNumberTCP, String command) {
 		String response;  
 		Scanner scanner;
 		PrintStream printStream;
@@ -76,14 +59,36 @@ public class Client {
 		catch(IOException e) {
 			e.printStackTrace();
 		}
+
+		return null;
 	} 
   
-	private static void send(String hostAddress, int portNumberTCP, int portNumberUDP, String command, String protocol) {
+	private static String send(String hostAddress, int portNumberTCP, int portNumberUDP, String command, String protocol) {
 		if (protocol.equals("U")) {
-	  		sendUDP(hostAddress, portNumberUDP, command);
+	  		return sendUDP(hostAddress, portNumberUDP, command);
 	  	} 
 	  	else if (protocol.equals("T")) {
-	  		sendTCP(hostAddress, portNumberTCP, command);
+	  		return sendTCP(hostAddress, portNumberTCP, command);
 	  	}
 	}
-}
+  
+	public static void main(String[] args) {
+	    String hostAddress;
+	    int portNumberTCP;
+	    int portNumberUDP;
+
+	    hostAddress = args[0];
+	    portNumberTCP = Integer.parseInt(args[1]);
+	    portNumberUDP = Integer.parseInt(args[2]);
+
+	    Scanner scanner = new Scanner(System.in);
+
+	    while (sc.hasNextLine()) {
+			String command = scanner.nextLine();
+			String[] arguments = command.split(" ");
+
+			String serverResponse = send(hostAddress, portNumberTCP, portNumberUDP, command, arguments[arguments.length - 1]);
+			System.out.println(serverResponse);
+	    }
+	}
+
