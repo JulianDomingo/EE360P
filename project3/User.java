@@ -30,7 +30,7 @@ public class User {
     synchronized public boolean removeOrder(int orderToRemove) {
         for (Order order : orderHistory) {
             if (order.getID() == orderToRemove) {
-                orderHistory.remove(orderToRemove);
+                orderHistory.remove(orderHistory.indexOf(order));
                 return true;
             }
         }

@@ -4,29 +4,29 @@
  */
 
 public class Order {
-	private int orderID;
-	private int quantity;
+    private int orderID;
+    private int quantity;
 
-	static int currentID = 0;
+    static int currentID = 0;
 
-	private String productName;
+    private String productName;
 
-	public Order(String productName, int quantity) {
-		currentID++;
-		this.orderID = currentID;
-		this.productName = productName;
-		this.quantity = quantity;
-	}
+    public Order(String productName, int quantity) {
+        currentID++;
+        this.orderID = currentID;
+        this.productName = productName;
+        this.quantity = quantity;
+    }
 
-	public int getID() {
-		return orderID;
-	}
+    public int getID() {
+        return orderID;
+    }
 
-	public String getProductName(){
-		return productName;
-	}
+    public String getProductName(){
+        return productName;
+    }
 
-	public int getQuantity(){
-		return quantity;
-	}
+    public int getQuantity(){
+        return quantity;
+    }
 }

@@ -37,7 +37,7 @@ public class Server {
         threadForUDP.start();
     }
 
-    private static synchronized void TCPServer(int portNumber) throws IOException {
+    private static void TCPServer(int portNumber) throws IOException {
         String command;
         Scanner scanner;
         PrintStream printStream;
@@ -66,7 +66,7 @@ public class Server {
         }
     }
 
-    private static synchronized void UDPServer(int portNumber) throws IOException {
+    private static void UDPServer(int portNumber) throws IOException {
         String command;
         DatagramPacket receivingPacket;
         DatagramPacket sendingPacket;
@@ -105,7 +105,7 @@ public class Server {
         }
     }
 
-    public static String execute(String command) {
+    public static synchronized String execute(String command) {
         String arguments[] = command.split(" ");
 
         switch (arguments[0]) {
@@ -197,7 +197,7 @@ public class Server {
             inventoryString += Integer.toString(item.getCurrentQuantity());
             inventoryString += "$";
         }
- 
+
         return inventoryString;
     }
 
