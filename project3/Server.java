@@ -119,7 +119,7 @@ public class Server {
             case "list":
                 return list();
             default:
-                return "Invalid command: '" + arguments[0] + "'.");
+                return "Invalid command: '" + arguments[0] + "'.";
         }
     }
 
