@@ -151,7 +151,8 @@ public class Server {
 
     private static String cancel(int orderID) {
         User user = findUserThroughID(orderID);
-        if (user == null) {
+
+        if (isNewCustomer(user)) {
             return orderID + " not found, no such order.";
         }
 
@@ -165,6 +166,10 @@ public class Server {
 
     private static String search(String userName) {
         User user = findUserThroughName(userName);
+
+        if (isNewCustomer(user)) {
+            return user.getUsername() + " is not an existing customer.";
+        }
 
         if (!user.hasPlacedOrders()) {
             return "No order found for " + userName + ".";
