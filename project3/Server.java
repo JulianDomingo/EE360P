@@ -38,7 +38,7 @@ public class Server {
         threadForUDP.start();
     }
 
-    private static void TCPServer(int portNumber) throws IOException {
+    private static synchronized void TCPServer(int portNumber) throws IOException {
         String command;
         Scanner scanner;
         PrintStream printStream;
@@ -67,7 +67,7 @@ public class Server {
         }
     }
 
-    private static void UDPServer(int portNumber) throws IOException {
+    private static synchronized void UDPServer(int portNumber) throws IOException {
         String command;
         DatagramPacket receivingPacket;
         DatagramPacket sendingPacket;
