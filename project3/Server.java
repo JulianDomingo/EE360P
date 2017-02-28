@@ -7,7 +7,6 @@ import java.io.*;
 import java.net.*;
 import java.util.*;
 import java.util.concurrent.*;
-import java.lang.StringBuilder;
 
 public class Server {
     private static ExecutorService es;
@@ -175,19 +174,18 @@ public class Server {
             return "No order found for " + userName + ".";
         }
 
-        StringBuilder orderList = new StringBuilder("");
+        String orderList = "";
 
         for (int order = 0; order < user.getOrderHistory().size(); order++) {
-            // TODO: Change to regular string concat
-            orderList.append(Integer.toString(user.getOrderHistory().get(order).getID()));
-            orderList.append(", ");
-            orderList.append(user.getOrderHistory().get(order).getProductName());
-            orderList.append(", ");
-            orderList.append(Integer.toString(user.getOrderHistory().get(order).getQuantity()));
-            orderList.append("\n");
+            orderList += Integer.toString(user.getOrderHistory().get(order).getID());
+            orderList += ", ";
+            orderList += user.getOrderHistory().get(order).getProductName();
+            orderList += ", ";
+            orderList += Integer.toString(user.getOrderHistory().get(order).getQuantity());
+            orderList += "$";
         }
 
-        return orderList.toString();
+        return orderList;
     }
 
     private static String list() {

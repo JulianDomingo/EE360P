@@ -36,7 +36,7 @@ public class Client {
                 serverResponse = send(hostAddress, portNumberTCP, portNumberUDP, command, currentProtocol);
             }
 
-            if (arguments[0].contains("list")) {
+            if (arguments[0].contains("list") || arguments[0].contains("search")) {
                 serverResponse = reformatServerResponse(serverResponse);
             }
 
