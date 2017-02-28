@@ -168,7 +168,7 @@ public class Server {
         User user = findUserThroughName(userName);
 
         if (isNewCustomer(user)) {
-            return user.getUsername() + " is not an existing customer.";
+            return userName + " is not an existing customer.";
         }
 
         if (!user.hasPlacedOrders()) {
