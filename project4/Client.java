@@ -6,55 +6,30 @@
 import java.util.Scanner;
 
 public class Client {
-	private ArrayList<Server> servers;
-    
+    private ArrayList<InetSocketAddress> servers; 
+
     public static void main (String[] args) {
         Scanner scanner = new Scanner(System.in);   
-        int numberOfServers = sc.nextInt();
-        for (int server = 0; server < numberOfServers; server++) { 
+        int serverInstances = sc.nextInt();
+
+        servers = new ArrayList<InetSocketAddress>(serverInstances); 
+
+        for (int server = 0; server < serverInstances; server++) { 
             addNextServerFrom(scanner);
         }
 
         while (sc.hasNextLine()) {
-            String cmd = sc.nextLine();
-            String[] tokens = cmd.split(" ");
-
-            if (tokens[0].equals("purchase")) {
-            
-            } else if (tokens[0].equals("cancel")) {
-            
-            } else if (tokens[0].equals("search")) {
-            
-            } else if (tokens[0].equals("list")) {
-            
-            } else {
-                System.out.println("ERROR: No such command");
-            }
+            String[] tokens = parseNextCommandFrom(scanner);
+            send
+            System.out.println("ERROR: No such command");
         }
     }
     
     private static void addNextServerFrom(Scanner scanner) {
         String[] serverInformation = scanner.nextLine();
         String IPAddress = serverInformation[0];
-        String portNumber = serverInformatino[1];
-        servers.add(new Server(IPAddress, portNumber));
+        int portNumber = Integer.parseInt(serverInformation[1]); 
+        servers.add(new InetSocketAddress(IPAddress, portNumber);
     }   
     
-    public class Server {
-        private String IPAddress;
-        private String portNumber;
-
-        public Server(String IPAddress, String portNumber) {
-            this.IPAddress = IPAddress;
-            this.portNumber = portNumber;
-        }
-
-        public String getIPAddress() {
-            return this.IPAddress;
-        }
-
-        public String getPortNumber() {
-            return this.portNumber;
-        }
-    }        
 }
