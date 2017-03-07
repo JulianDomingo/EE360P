@@ -38,7 +38,7 @@ public class Server {
     }         
 
     private static void addNextServerFrom(Scanner scanner) {
-        String[] serverInformation = scanner.next().split(":");
+        String[] serverInformation = scanner.nextLine().split(":");
         String IPAddress = serverInformation[0];
         int portNumber = Integer.parseInt(serverInformation[1]);
         servers.add(new InetSocketAddress(IPAddress, portNumber));
