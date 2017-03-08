@@ -3,24 +3,38 @@
  * Alec Bargas : apb973
  */
 
-import java.util.Scanner;
+import java.util.*;
+import java.util.concurrent.*;
+import java.util.concurrent.atomic.*;
+import java.net.*;
+import java.io.*;
 
 public class Server {
     private static ArrayList<InetSocketAddress> servers;
+    private static ArrayList<Integer> timedOutServers;
     private static ExecutorService executorService;
     
     private static ArrayList<Item> inventory;
     private static ArrayList<User> clients;
+    
+    private static int serverID;
 
+    private int serverInstances;
+    private AtomicInteger requestID;
+
+    private static PriorityQueue<Integer> pendingQueue;
+  
     public static void main (String[] args) throws IOException {
         Scanner scanner = new Scanner(System.in);
-        int serverID = scanner.nextInt();
-        int serverInstances = scanner.nextInt();
+        serverID = scanner.nextInt();
+        serverInstances = scanner.nextInt();
         String inventoryPath = scanner.next();
 
         inventory = new ArrayList<Item>();
-        clients = new ArrayList<User.();        
+        clients = new ArrayList<User();
+        timedOutServers = new ArrayList<Integer>();        
         servers = new ArrayList<InetSocketAddress>(serverInstances);
+        pendingQueue = new PriorityQueue<Integer>();
 
         executorService = new Executors.newCachedThreadPool();
 
@@ -28,19 +42,28 @@ public class Server {
         System.out.println("[DEBUG] serverInstances: " + serverInstances);
         System.out.println("[DEBUG] inventory path: " + inventoryPath);
 
-        for (int server = 0; server < serverInstances; server++) {
-            addNextServerFrom(scanner);
-            System.out.println("Address for server " + server + ": " + servers.get(server).getAddress();
-        }
-    
+        addServers();    
         parse(inventoryPath);
 
-            // TODO: start server socket to communicate with clients and other servers
+        requestID = new AtomicInteger(serverInstances);
 
-            // TODO: parse the inventory file
-
-            // TODO: handle request from client
+        es.submit(new clientListener());
+        es.submit(new serverListener());
     }         
+
+
+    private static void requestCriticalSection() {
+        Integer processID = requestID.getAndIncrement();
+        pendingQueue.add(processID);
+        String request = "Request:" + serverID
+        send(request);
+        waitUntilReadyFor(processID);
+    }
+
+    private static void waitUntilReadyFor(int processID) {
+        while (timedOutServers.contains(pendingQueue.peek())) { pendingQueue.poll(); }
+        while (pendingQueue.peek() != processID);
+    }
 
     private static String execute(String command) {
         String tokens[] = command.split(" ");
@@ -60,7 +83,19 @@ public class Server {
     }
 
     private static String purchase(String userName, String productName, int quantity) {
-       
+               
+    }
+
+    private static String cancel(int orderID) {
+
+    }
+
+    private static String list() {
+
+    }
+
+    private static String search(String userName) {
+
     }
            
     private static void addNextServerFrom(Scanner scanner) {
@@ -99,4 +134,23 @@ public class Server {
     private static Item formItemFrom(String[] arguments) {
         return new Item(arguments[0], Integer.parseInt(arguments[1]));
     }        
+
+    private static void addServers(Scanner scanner) {
+        for (int server = 0; server < serverInstances; server++) {
+            addNextServerFrom(scanner);
+            System.out.println("Address for server " + server + ": " + servers.get(server).getAddress();
+        }
+    }
+
+    public class ServerListener implements Runnable {
+        public static void run() {
+            
+        }
+    }
+
+    public class ClientListener implements Runnable {
+        public static void run() {
+
+        }
+    }    
 }
