@@ -33,6 +33,7 @@ public class Client {
         try {
             Socket clientSocket = new Socket();
             clientSocket.connect(server, 100);
+            clientSocket.setSoTimeout(100);
             scanner = new Scanner(clientSocket.getInputStream());
             printStream = new PrintStream(clientSocket.getOutputStream());
             printStream.println(command);

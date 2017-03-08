@@ -51,6 +51,42 @@ public class Server {
         es.submit(new serverListener());
     }         
 
+    static public class ServerCommunication implements Runnable {
+        private String message;
+        private int serverNumber;
+
+        ServerCommunication(int serverNumber, String message) {
+            this.serverNumber = serverNumber;
+            this.message = message;
+        }
+
+        public void run() {
+            String response;
+            PrintStream printStream;
+            Scanner scanner;
+            
+            try {
+                Socket clientSocket = new Socket();
+                clientSocket.connect(servers.get(serverNumber), 100);
+                clientSocket.setSoTimeout(100);
+                scanner = new Scanner(clientSocket.getInputStream());
+                printStream = new PrintStream(clientSocket.getOutputStream());
+                printStream.println(message);
+                printStream.flush();
+                response = scanner.nextLine();
+                if (response != null) { break; }
+            }
+            catch (SocketTimeoutException e) {
+                deprecateServer(serverNumber);
+            }
+            catch (ConnectException e) {
+                deprecateServer(serverNumber);
+            }
+            catch (IOException e) {
+                e.printStackTrace();
+            }                
+        }
+    }
 
     private static void requestCriticalSection() {
         Integer processID = requestID.getAndIncrement();
@@ -58,6 +94,14 @@ public class Server {
         String request = "Request:" + serverID
         send(request);
         waitUntilReadyFor(processID);
+    }
+
+    private static void send(String message) {
+        for (int server = 0; server < serverInstances; server++) {
+            if (server != serverID && !timedOutServers.contains(server)) {
+                executorService.submit(new ServerCommunication(server, message);
+            }
+        }
     }
 
     private static void waitUntilReadyFor(int processID) {
@@ -203,15 +247,73 @@ public class Server {
         }
     }
 
-    public class ServerListener implements Runnable {
-        public static void run() {
-            
+    public static class ServerListener implements Runnable {
+        public void run() {
+            submitNewServerProcess();
         }
     }
 
-    public class ClientListener implements Runnable {
-        public static void run() {
-
+    private static void submitNewServerProcess() {    
+        try {
+            ServerSocket serverSocket = new ServerSocket(servers.get(serverID).getPort());
+            while (true) {
+                Socket socket = serverSocket.accept();
+                executorService.submit(new ClientTask(socket));
+            }
         }
+        catch (IOException e) {
+            e.printStackTrace();
+        }           
+    }
+
+    public static class ClientListener implements Runnable {
+        public void run() {
+            submitNewClientProcess();
+        }
+    }   
+
+    private static void submitNewClientProcess() {
+        try {
+            ServerSocket serverSocket = new ServerSocket(servers.get(serverID).getPort());
+            while (true) {
+                Socket socket = serverSocket.accept();
+                executorService.submit(new ServerTask(socket);
+            }
+        }
+        catch (IOException e) {
+            e.printStackTrace();
+        }
+    }        
+
+    public static class ServerTask implements Runnable {
+        private Socket serverSocket;
+
+        ServerTask(Socket serverSocket) {
+            this.serverSocket = serverSocket;
+        }
+
+        public void run() {
+            serviceServerTask(serverSocket);
+        }
+    }
+
+    public static class ClientTask implements Runnable {
+        private Socket clientSocket;
+
+        ClientTask(Socket clientSocket) {
+            this.clientSocket = clientSocket;
+        }
+
+        public void run() {
+            serviceClientTask(clientSocket);
+        }
+    }
+
+    private static void serviceServerTask(Socket socket) {
+
+    }
+
+    private static void serviceClientTask(Socket socket) {
+
     }    
 }
