@@ -83,20 +83,81 @@ public class Server {
     }
 
     private static String purchase(String userName, String productName, int quantity) {
-               
+        User user = findUserThroughName(userName);
+        
+        if (isNewCustomer(user)) {
+            clients.add(new User(userName));
+            user = clients.get(clients.size() - 1);
+        }
+
+        if (!existsInInventory(productName)) {
+            return "Not Available - We do not sell this product.";
+        }
+        else if (!inventoryHasEnoughOf(productName, quantity)) {
+            return "Not Available - Not enough items.";
+        }
+
+        Order newOrder = new Order(productName, quantity);
+        user.addOrder(newOrder);
+
+        Item purchasedItem = findItem(productName);
+        purchasedItem.purchaseQuantityOf(quantity);
+    
+        return "Your order has been placed, " + orderID + " " + userName + " " + productName + " " + quantity + ".";        
     }
 
     private static String cancel(int orderID) {
+        User user = findUserThroughID(orderID);
+            
+        if (isNewCustomer(user)) {
+            return ordreID + " not found, no such order.";
+        }
 
+        Order cancelledOrder = user.getOrder(orderID);
+
+        removeItemFrom(cancelledOrder);
+        user.removeOrder(orderID);
+
+        return "Order " + orderID + " is cancelled.";        
     }
 
     private static String list() {
+        String inventoryString = "";
 
+        for (Item item : inventory) {
+            inventoryString += item.getItemName();
+            inventoryString += " ";
+            inventoryString += Integer.toString(item.getCurrentQuantity());
+            inventoryString += "$";
+        }
+
+        return inventoryString;
     }
 
     private static String search(String userName) {
+        User user = findUserThroughName(userName);
 
-    }
+        if (isNewCustomer(user)) {
+            return userName + " is not an existing customer.";
+        }
+
+        if (!user.hasPlacedOrders()) {
+            return "No order found for " + userName + ".";
+        }
+
+        String orderList = "";
+
+        for (int order = 0; order < user.getOrderHistory().size(); order++) {
+            orderList += Integer.toString(user.getOrderHistory().get(order).getID());
+            orderList += ", ";
+            orderList += user.getOrderHistory().get(order).getProductName();
+            orderList += ", ";
+            orderList += Integer.toString(user.getOrderHistory().get(order).getQuantity());
+            orderList += "$";
+        }
+
+        return orderList;
+    }        
            
     private static void addNextServerFrom(Scanner scanner) {
         String[] serverInformation = scanner.nextLine().split(":");
