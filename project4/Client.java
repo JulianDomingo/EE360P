@@ -3,14 +3,16 @@
  * Alec Bargas : apb973
  */
 
-import java.util.Scanner;
+import java.util.*;
+import java.net.*;
+import java.io.*;
 
 public class Client {
-    private ArrayList<InetSocketAddress> servers; 
+    private static ArrayList<InetSocketAddress> servers; 
 
     public static void main (String[] args) {
         Scanner scanner = new Scanner(System.in);   
-        int serverInstances = sc.nextInt();
+        int serverInstances = scanner.nextInt();
 
         servers = new ArrayList<InetSocketAddress>(serverInstances); 
 
@@ -18,7 +20,7 @@ public class Client {
             addNextServerFrom(scanner);
         }
 
-        while (sc.hasNextLine()) {
+        while (scanner.hasNextLine()) {
             String command = scanner.nextLine();
             String serverResponse = execute(command);           
             System.out.println(serverResponse); 
@@ -50,8 +52,7 @@ public class Client {
     
     private static String execute(String command) {
         String[] tokens = command.split(" ");
-        return (isValidCommand(tokens[0]) ? sendToTCPServer(command) : "ERROR: No such command";
-        }
+        return (isValidCommand(tokens[0])) ? sendToTCPServer(command) : "ERROR: No such command";        
     }
         
     private static boolean isValidCommand(String commandArgument) {
@@ -60,13 +61,13 @@ public class Client {
     } 
     
     private static void addNextServerFrom(Scanner scanner) {
-        String[] serverInformation = scanner.nextLine();
+        String[] serverInformation = scanner.nextLine().split(":");
         String IPAddress = serverInformation[0];
         int portNumber = Integer.parseInt(serverInformation[1]); 
-        servers.add(new InetSocketAddress(IPAddress, portNumber);
+        servers.add(new InetSocketAddress(IPAddress, portNumber));
     }   
     
-    private static void sendToTCPServer(String command) {
+    private static String sendToTCPServer(String command) {
         return send(servers.get(0), command);
     }   
 }

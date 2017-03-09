@@ -21,7 +21,7 @@ public class Item {
         return quantity;
     }
 
-    synchronized int purhcaseQuantityOf(int amount) {
+    synchronized void purchaseQuantityOf(int amount) {
         quantity -= amount;
     }
 

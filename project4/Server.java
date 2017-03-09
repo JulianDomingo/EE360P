@@ -19,12 +19,12 @@ public class Server {
     
     private static int serverID;
 
-    private int serverInstances;
-    private AtomicInteger requestID;
+    private static int serverInstances;
+    private static AtomicInteger requestID;
 
     private static PriorityQueue<Integer> pendingQueue;
 
-    private static int serverMessages;
+    private static int[] serverMessages;
   
     public static void main (String[] args) throws IOException {
         Scanner scanner = new Scanner(System.in);
@@ -33,26 +33,26 @@ public class Server {
         String inventoryPath = scanner.next();
 
         inventory = new ArrayList<Item>();
-        clients = new ArrayList<User();
+        clients = new ArrayList<User>();
         timedOutServers = new ArrayList<Integer>();        
         servers = new ArrayList<InetSocketAddress>(serverInstances);
         pendingQueue = new PriorityQueue<Integer>();
 
-        executorService = new Executors.newCachedThreadPool();
+        executorService = Executors.newCachedThreadPool();
 
         System.out.println("[DEBUG] my ID: " + serverID);
         System.out.println("[DEBUG] serverInstances: " + serverInstances);
         System.out.println("[DEBUG] inventory path: " + inventoryPath);
 
-        addServers();   
+        addServers(scanner);   
         instantiateServerMessages();
 
         parse(inventoryPath);
 
         requestID = new AtomicInteger(serverInstances);
 
-        es.submit(new clientListener());
-        es.submit(new serverListener());
+        executorService.submit(new ClientListener());
+        executorService.submit(new ServerListener());
     }         
 
     static public class ServerCommunication implements Runnable {
@@ -78,7 +78,7 @@ public class Server {
                 printStream.println(message);
                 printStream.flush();
                 response = scanner.nextLine();
-                if (response != null) { break; }
+                if (response != null) { return; }
             }
             catch (SocketTimeoutException e) {
                 deprecateServer(serverNumber);
@@ -92,10 +92,15 @@ public class Server {
         }
     }
 
+    private static void deprecateServer(int serverNumber) {
+        timedOutServers.add(serverNumber);
+        pendingQueue.remove(serverNumber);
+    }
+
     private static void requestCriticalSection() {
         Integer processID = requestID.getAndIncrement();
         pendingQueue.add(processID);
-        String request = "Request:" + serverID
+        String request = "Request:" + serverID;
         send(request);
         waitUntilReadyFor(processID);
     }
@@ -109,7 +114,7 @@ public class Server {
     private static void send(String message) {
         for (int server = 0; server < serverInstances; server++) {
             if (server != serverID && !timedOutServers.contains(server)) {
-                executorService.submit(new ServerCommunication(server, message);
+                executorService.submit(new ServerCommunication(server, message));
             }
         }
     }
@@ -157,14 +162,14 @@ public class Server {
         Item purchasedItem = findItem(productName);
         purchasedItem.purchaseQuantityOf(quantity);
     
-        return "Your order has been placed, " + orderID + " " + userName + " " + productName + " " + quantity + ".";        
+        return "Your order has been placed, " + newOrder.getID() + " " + userName + " " + productName + " " + quantity + ".";        
     }
 
     private static String cancel(int orderID) {
         User user = findUserThroughID(orderID);
             
         if (isNewCustomer(user)) {
-            return ordreID + " not found, no such order.";
+            return orderID + " not found, no such order.";
         }
 
         Order cancelledOrder = user.getOrder(orderID);
@@ -253,7 +258,7 @@ public class Server {
     private static void addServers(Scanner scanner) {
         for (int server = 0; server < serverInstances; server++) {
             addNextServerFrom(scanner);
-            System.out.println("Address for server " + server + ": " + servers.get(server).getAddress();
+            System.out.println("Address for server " + server + ": " + servers.get(server).getAddress());
         }
     }
 
@@ -261,6 +266,67 @@ public class Server {
         for (int server = 0; server < serverInstances; server++) {
             serverMessages[server] = 0;
         }
+    }
+
+    private static User findUserThroughName(String userName) {
+        for (User user : clients) {
+            if (user.getUsername().equals(userName)) {
+                return user;
+            }
+        }
+        return null;
+    }
+
+    private static User findUserThroughID(int orderID) {
+        for (User user : clients) {
+            for (Order order : user.getOrderHistory()) {
+                if (order.getID() == orderID) {
+                    return user;
+                }
+            }
+        }
+        return null;
+    }    
+
+    private static boolean isNewCustomer(User user) {
+        return user == null;
+    }
+
+    private static void removeItemFrom(Order cancelledOrder) {
+        for (Item item : inventory) {
+            if (item.getItemName().equals(cancelledOrder.getProductName())) {
+                item.returnQuantityOf(cancelledOrder.getQuantity());
+            }
+        }
+    }
+    
+    private static Item findItem(String productName) {
+        for (Item item : inventory) {
+            if (item.getItemName().equals(productName)) {
+                return item;
+            }
+        }
+        return null;
+    }
+
+    private static boolean inventoryHasEnoughOf(String productName, int desiredQuantity) {
+        for (Item item : inventory) {
+            if (item.getItemName().equals(productName) && 
+                item.getCurrentQuantity() < desiredQuantity) 
+            {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private static boolean existsInInventory(String productName) {
+        for (Item item : inventory) {
+            if (item.getItemName().equals(productName)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     public static class ServerListener implements Runnable {
@@ -293,7 +359,7 @@ public class Server {
             ServerSocket serverSocket = new ServerSocket(servers.get(serverID).getPort());
             while (true) {
                 Socket socket = serverSocket.accept();
-                executorService.submit(new ServerTask(socket);
+                executorService.submit(new ServerTask(socket));
             }
         }
         catch (IOException e) {
@@ -347,9 +413,9 @@ public class Server {
                 }
             }
             else if (tokens[0].equals("Release")) {
-                String response = execute(tokens[1]);
-                int processID = Integer.parseInt(tokens[2]);
-                if (!pendingQueue.conains(processID)) {
+                response = execute(tokens[1]);
+                Integer processID = Integer.parseInt(tokens[2]);
+                if (!pendingQueue.contains(processID)) {
                     serverMessages[processID]++;
                 }
                 else {
@@ -382,3 +448,4 @@ public class Server {
         }
     }    
 }
+
