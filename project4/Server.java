@@ -23,6 +23,8 @@ public class Server {
     private AtomicInteger requestID;
 
     private static PriorityQueue<Integer> pendingQueue;
+
+    private static int serverMessages;
   
     public static void main (String[] args) throws IOException {
         Scanner scanner = new Scanner(System.in);
@@ -42,7 +44,9 @@ public class Server {
         System.out.println("[DEBUG] serverInstances: " + serverInstances);
         System.out.println("[DEBUG] inventory path: " + inventoryPath);
 
-        addServers();    
+        addServers();   
+        instantiateServerMessages();
+
         parse(inventoryPath);
 
         requestID = new AtomicInteger(serverInstances);
@@ -94,6 +98,12 @@ public class Server {
         String request = "Request:" + serverID
         send(request);
         waitUntilReadyFor(processID);
+    }
+
+    private static void releaseCriticalSection(String command) {
+        String release = "Release: " + command + ":" + serverID;
+        send(command);
+        pendingQueue.poll();
     }
 
     private static void send(String message) {
@@ -247,6 +257,12 @@ public class Server {
         }
     }
 
+    private static void instantiateServerMessages() {
+        for (int server = 0; server < serverInstances; server++) {
+            serverMessages[server] = 0;
+        }
+    }
+
     public static class ServerListener implements Runnable {
         public void run() {
             submitNewServerProcess();
@@ -310,10 +326,59 @@ public class Server {
     }
 
     private static void serviceServerTask(Socket socket) {
+        String command;
+        String response;
+        PrintStream printStream;
+        Scanner scanner;
 
+        try {
+            scanner = new Scanner(socket.getInputStream());
+            printStream = new PrintStream(socket.getOutputStream());
+            command = scanner.nextLine();
+            String[] tokens = command.split(":");
+
+            if (tokens[0].equals("Request")) {
+                int processID = Integer.parseInt(tokens[1]);
+                if (serverMessages[processID] > 0) {
+                    serverMessages[processID]--;
+                }
+                else {
+                    pendingQueue.add(processID);
+                }
+            }
+            else if (tokens[0].equals("Release")) {
+                String response = execute(tokens[1]);
+                int processID = Integer.parseInt(tokens[2]);
+                if (!pendingQueue.conains(processID)) {
+                    serverMessages[processID]++;
+                }
+                else {
+                    pendingQueue.poll();
+                }
+            }                   
+        }   
+        catch (IOException e) {
+            e.printStackTrace();
+        }                 
     }
 
     private static void serviceClientTask(Socket socket) {
+        String command;
+        String response;
+        PrintStream printStream;
+        Scanner scanner;
 
+        try {
+            scanner = new Scanner(socket.getInputStream());
+            printStream = new PrintStream(socket.getOutputStream());
+            command = scanner.nextLine();
+            requestCriticalSection();
+            response = execute(command);
+            releaseCriticalSection(command);
+            printStream.println(response);
+        }
+        catch (IOException e) {
+            e.printStackTrace();
+        }
     }    
 }
