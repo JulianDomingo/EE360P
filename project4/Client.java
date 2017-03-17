@@ -32,23 +32,34 @@ public class Client {
         PrintStream printStream;
         Scanner scanner;
 
-        try {
-            Socket clientSocket = new Socket();
-            clientSocket.connect(server, 100);
-            clientSocket.setSoTimeout(100);
-            scanner = new Scanner(clientSocket.getInputStream());
-            printStream = new PrintStream(clientSocket.getOutputStream());
-            printStream.println(command);
-            printStream.flush();
-            responseOfTCPServer = scanner.nextLine();
-            clientSocket.close();
-            return responseOfTCPServer;
+        while (true) {
+            try {
+                Socket clientSocket = new Socket();
+                clientSocket.connect(server, 100);
+                clientSocket.setSoTimeout(100);
+                scanner = new Scanner(clientSocket.getInputStream());
+                printStream = new PrintStream(clientSocket.getOutputStream());
+                printStream.println(command);
+                printStream.flush();
+                responseOfTCPServer = scanner.nextLine();
+                clientSocket.close();
+                return responseOfTCPServer;
+            }
+            catch (SocketTimeoutException e) {
+                deprecateServer();
+            }
+            catch (ConnectException e) {
+                deprecateServer();
+            }
+            catch (IOException e) {
+                e.printStackTrace();               
+            }   
         }
-        catch (IOException e) {
-            e.printStackTrace();
-        }        
-        return null;
-    }    
+    }  
+
+    private static void deprecateServer() {
+        servers.remove(0);
+    }  
     
     private static String execute(String command) {
         String[] tokens = command.split(" ");
@@ -68,6 +79,7 @@ public class Client {
     }   
     
     private static String sendToTCPServer(String command) {
+        // Assumed majority of servers will not crash, so "severs.get(0)" will never fail.
         return send(servers.get(0), command);
     }   
 }

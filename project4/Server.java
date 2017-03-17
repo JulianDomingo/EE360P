@@ -51,8 +51,8 @@ public class Server {
 
         requestID = new AtomicInteger(serverInstances);
 
-        executorService.submit(new ClientListener());
         executorService.submit(new ServerListener());
+        executorService.submit(new ClientListener());
     }         
 
     static public class ServerCommunication implements Runnable {
@@ -217,13 +217,6 @@ public class Server {
 
         return orderList;
     }        
-           
-    private static void addNextServerFrom(Scanner scanner) {
-        String[] serverInformation = scanner.nextLine().split(":");
-        String IPAddress = serverInformation[0];
-        int portNumber = Integer.parseInt(serverInformation[1]);
-        servers.add(new InetSocketAddress(IPAddress, portNumber));
-    }
 
     private static void parse(String path) {
         try {
@@ -260,6 +253,13 @@ public class Server {
             addNextServerFrom(scanner);
             System.out.println("Address for server " + server + ": " + servers.get(server).getAddress());
         }
+    }
+
+    private static void addNextServerFrom(Scanner scanner) {
+        String[] serverInformation = scanner.nextLine().split(":");
+        String IPAddress = serverInformation[0];
+        int portNumber = Integer.parseInt(serverInformation[1]);
+        servers.add(new InetSocketAddress(IPAddress, portNumber));
     }
 
     private static void instantiateServerMessages() {
