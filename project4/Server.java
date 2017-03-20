@@ -23,8 +23,7 @@ public class Server {
     private static AtomicInteger requestID;
 
     private TimeStamp myTimeStamp;
-    //private static PriorityQueue<Integer> pendingQueue;
-    private static ArrayList<TimeStamp> pendingQueue;
+    private ArrayList<TimeStamp> pendingQueue;
 
     private static int[] serverMessages;
 
@@ -143,6 +142,144 @@ public class Server {
         while (pendingQueue.peek() != processID);
     }
 
+    public static class ServerListener implements Runnable {
+        public void run() {
+            submitNewServerProcess();
+        }
+    }
+
+    private static void submitNewServerProcess() {    
+        try {
+            ServerSocket serverSocket = new ServerSocket(servers.get(serverID).getPort());
+            while (true) {
+                Socket socket = serverSocket.accept();
+                executorService.submit(new ServerTask(socket));
+            }
+        }
+        catch (IOException e) {
+            e.printStackTrace();
+        }           
+    }
+
+    public static class ClientListener implements Runnable {
+        public void run() {
+            submitNewClientProcess();
+        }
+    }   
+
+    private static void submitNewClientProcess() {
+        try {
+            ServerSocket serverSocket = new ServerSocket(servers.get(serverID).getPort());
+            while (true) {
+                Socket socket = serverSocket.accept();
+                executorService.submit(new ClientTask(socket));
+            }
+        }
+        catch (IOException e) {
+            e.printStackTrace();
+        }
+    }        
+
+    public static class ServerTask implements Runnable {
+        private Socket serverSocket;
+
+        ServerTask(Socket serverSocket) {
+            this.serverSocket = serverSocket;
+        }
+
+        public void run() {
+            serviceServerTask(serverSocket);
+        }
+    }
+
+    public static class ClientTask implements Runnable {
+        private Socket clientSocket;
+
+        ClientTask(Socket clientSocket) {
+            this.clientSocket = clientSocket;
+        }
+
+        public void run() {
+            serviceClientTask(clientSocket);
+        }
+    }
+
+    private static void serviceServerTask(Socket socket) {
+        String command;
+        String response;
+        PrintStream printStream;
+        Scanner scanner;
+
+        try {
+            scanner = new Scanner(socket.getInputStream());
+            printStream = new PrintStream(socket.getOutputStream());
+            command = scanner.nextLine();
+            String[] tokens = command.split(":");
+
+            if (tokens[0].equals("Request")) {
+                myTimeStamp.setLogicalClockReceive(Integer.parseInt(tokens[1]));
+                pendingQueue.add(myTimeStamp);
+            }
+            else if (tokens[0].equals("Release")) {
+                myTimeStamp.setLogicalClockReceive(Integer.parseInt(tokens[1]));
+                TimeStamp senderTimeStamp = search(Integer.parseInt(tokens[2]));
+                pendingQueue.remove(senderTimeStamp);
+                if (acknowledgements == serverInstances - 1 && isSmallest()) {
+                    execute(command);
+                }
+            }
+            else if (tokens[0].equals("Acknowledgement")) {
+                myTimeStamp.setLogicalClockReceive(Integer.parseInt(tokens[1]));               
+                acknowledgements++;
+
+                if (acknowledgements == serverInstances - 1 && isSmallest()) {
+                    execute(command);
+                }
+            }
+            else {
+                myTimeStamp.setLogicalClockInternal();
+                // Handle client command
+                executorService.submit(new ClientListener());
+
+            }                   
+        }   
+        catch (IOException e) {
+            e.printStackTrace();
+        }                 
+    }
+
+    private boolean isSmallest() {
+        TimeStamp timeStamp = search(serverID);
+        for (TimeStamp other : pendingQueue) {
+            if (timeStamp.compare(other) == 1) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static void serviceClientTask(Socket socket) {
+        String command;
+        String response;
+        PrintStream printStream;
+        Scanner scanner;
+
+        try {
+            scanner = new Scanner(socket.getInputStream());
+            printStream = new PrintStream(socket.getOutputStream());
+            command = scanner.nextLine();
+            requestCriticalSection();
+            response = execute(command);
+            releaseCriticalSection(command);
+            printStream.println(response);
+        }
+        catch (IOException e) {
+            e.printStackTrace();
+        }
+    }   
+
+    /***************** PARSING AND SAME AS PROJECT 3 **************/
+    
     private static String execute(String command) {
         String tokens[] = command.split(" ");
 
@@ -346,140 +483,6 @@ public class Server {
             }
         }
         return false;
-    }
-
-    public static class ServerListener implements Runnable {
-        public void run() {
-            submitNewServerProcess();
-        }
-    }
-
-    private static void submitNewServerProcess() {    
-        try {
-            ServerSocket serverSocket = new ServerSocket(servers.get(serverID).getPort());
-            while (true) {
-                Socket socket = serverSocket.accept();
-                executorService.submit(new ServerTask(socket));
-            }
-        }
-        catch (IOException e) {
-            e.printStackTrace();
-        }           
-    }
-
-    public static class ClientListener implements Runnable {
-        public void run() {
-            submitNewClientProcess();
-        }
-    }   
-
-    private static void submitNewClientProcess() {
-        try {
-            ServerSocket serverSocket = new ServerSocket(servers.get(serverID).getPort());
-            while (true) {
-                Socket socket = serverSocket.accept();
-                executorService.submit(new ClientTask(socket));
-            }
-        }
-        catch (IOException e) {
-            e.printStackTrace();
-        }
-    }        
-
-    public static class ServerTask implements Runnable {
-        private Socket serverSocket;
-
-        ServerTask(Socket serverSocket) {
-            this.serverSocket = serverSocket;
-        }
-
-        public void run() {
-            serviceServerTask(serverSocket);
-        }
-    }
-
-    public static class ClientTask implements Runnable {
-        private Socket clientSocket;
-
-        ClientTask(Socket clientSocket) {
-            this.clientSocket = clientSocket;
-        }
-
-        public void run() {
-            serviceClientTask(clientSocket);
-        }
-    }
-
-    private static void serviceServerTask(Socket socket) {
-        String command;
-        String response;
-        PrintStream printStream;
-        Scanner scanner;
-
-        try {
-            scanner = new Scanner(socket.getInputStream());
-            printStream = new PrintStream(socket.getOutputStream());
-            command = scanner.nextLine();
-            String[] tokens = command.split(":");
-
-            if (tokens[0].equals("Request")) {
-                myTimeStamp.setLogicalClockReceive(Integer.parseInt(tokens[1]));
-                pendingQueue.add(myTimeStamp);
-            }
-            else if (tokens[0].equals("Release")) {
-                myTimeStamp.setLogicalClockReceive(Integer.parseInt(tokens[1]));
-                TimeStamp senderTimeStamp = search(Integer.parseInt(tokens[2]));
-                pendingQueue.remove(senderTimeStamp);
-                if (acknowledgements == serverInstances - 1 && isSmallest()) {
-                    execute(command);
-                }
-            }
-            else if (tokens[0].equals("Acknowledgement")) {
-                myTimeStamp.setLogicalClockReceive(Integer.parseInt(tokens[1]));               
-                acknowledgements++;
-
-                if (acknowledgements == serverInstances - 1 && isSmallest()) {
-                    execute(command);
-                }
-            }
-            else {
-                // Handle client command
-                executorService.submit(new ClientListener());
-            }                   
-        }   
-        catch (IOException e) {
-            e.printStackTrace();
-        }                 
-    }
-
-    private boolean isSmallest() {
-        TimeStamp timeStamp = search(serverID);
-        for (TimeStamp other : pendingQueue) {
-            if (timeStamp.compare(other) == 1) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    private static void serviceClientTask(Socket socket) {
-        String command;
-        String response;
-        PrintStream printStream;
-        Scanner scanner;
-
-        try {
-            scanner = new Scanner(socket.getInputStream());
-            printStream = new PrintStream(socket.getOutputStream());
-            command = scanner.nextLine();
-            requestCriticalSection();
-            response = execute(command);
-            releaseCriticalSection(command);
-            printStream.println(response);
-        }
-        catch (IOException e) {
-            e.printStackTrace();
-        }
-    }    
+    } 
 }
 

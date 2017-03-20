@@ -34,6 +34,10 @@ public class TimeStamp {
 		return -1;
 	}
  
+ 	public void setLogicalClockInternal() {
+ 		this.logicalClock++;
+ 	}
+ 	
  	public void setLogicalClockSend() {
  		this.logicalClock++;
  	}
