@@ -22,11 +22,13 @@ public class Server {
     private static int serverInstances;
 
     private static AtomicInteger requestID;
-    private static AtomicInteger logicalClock;
 
-    private static PriorityQueue<Integer> pendingQueue;
+    //private static PriorityQueue<Integer> pendingQueue;
+    private static PriorityQueue<TimeStamp> pendingQueue;
 
     private static int acknowledgements = 0;
+
+    private static TimeStamp logicalClock;
 
     public static void main (String[] args) throws IOException {
         Scanner scanner = new Scanner(System.in);
@@ -38,7 +40,7 @@ public class Server {
         clients = new ArrayList<User>();
         timedOutServers = new ArrayList<Integer>();        
         servers = new ArrayList<InetSocketAddress>(serverInstances);
-        pendingQueue = new PriorityQueue<Integer>();
+        pendingQueue = new PriorityQueue<TimeStamp>();
 
         executorService = Executors.newCachedThreadPool();
 
@@ -50,7 +52,7 @@ public class Server {
         parse(inventoryPath);
 
         requestID = new AtomicInteger(1);
-        logicalClock = new AtomicInteger(0);
+        logicalClock = new TimeStamp(0, serverID);
 
         executorService.submit(new ServerListener());
     }         
@@ -96,6 +98,132 @@ public class Server {
         timedOutServers.add(serverNumber);
         pendingQueue.remove(serverNumber);
     }
+
+
+    public static class ServerListener implements Runnable {
+        public void run() {
+            submitNewServerProcess();
+        }
+    }
+
+    private static void submitNewServerProcess() {    
+        try {
+            ServerSocket serverSocket = new ServerSocket(servers.get(serverID).getPort());
+            while (true) {
+                Socket socket = serverSocket.accept();
+                executorService.submit(new ServerTask(socket));
+            }
+        }
+        catch (IOException e) {
+            e.printStackTrace();
+        }           
+    }      
+
+    public static class ServerTask implements Runnable {
+        private Socket serverSocket;
+
+        ServerTask(Socket serverSocket) {
+            this.serverSocket = serverSocket;
+        }
+
+        public void run() {
+            serviceServerTask(serverSocket);
+        }
+    }
+
+    private static void serviceServerTask(Socket socket) {
+        String command;
+        String response;
+        PrintStream printStream;
+        Scanner scanner;
+
+        try {
+            scanner = new Scanner(socket.getInputStream());
+            printStream = new PrintStream(socket.getOutputStream());
+            command = scanner.nextLine();
+            if (command == null) { return; }
+            String[] tokens = command.split(":");
+
+            if (tokens[0].equals("Request")) {
+                int senderLogicalClock = Integer.parseInt(tokens[1]);
+                int processID = Integer.parseInt(tokens[2]);
+                pendingQueue.add(new TimeStamp(senderLogicalClock, processID));
+                send("Acknowledgement:" + logicalClock.getLogicalClock().toString() + ":" + logicalClock.getPID().toString());
+            }
+            else if (tokens[0].equals("Release")) {
+                pendingQueue.poll();
+            } 
+            else {
+                // Client task
+                requestCriticalSection();
+                response = execute(command);
+                releaseCriticalSection(command);
+
+                printStream.println(response);
+                printStream.flush();
+            }       
+            logicalClock.getAndIncrement();           
+        }   
+        catch (IOException e) {
+            e.printStackTrace();
+        }                 
+    }   
+
+    private static void requestCriticalSection() {
+        executorService.submit(new ClientRequest());
+        Integer processID = requestID.getAndIncrement();
+        pendingQueue.add(processID);
+        while (timedOutServers.contains(pendingQueue.peek())) { pendingQueue.poll(); }
+        // while (pendingQueue.peek() != processID);
+        while (acknowledgements != serverInstances - 1);
+    }
+
+    private static void releaseCriticalSection(String command) {
+        String release = "Release:" + logicalClock.getLogicalClock().toString() + ":" + serverID;
+        send(command);
+        pendingQueue.poll();
+    }
+
+    private static void send(String message) {
+        for (int server = 1; server < serverInstances; server++) {
+            if (server != serverID && !timedOutServers.contains(server)) {
+                executorService.submit(new ServerCommunication(server, message));
+            }
+        }
+    }
+
+    public static class ClientRequest implements Runnable {
+        public void run() {
+            PrintStream printStream;
+            Scanner scanner;
+            String response;
+
+            try {
+                Socket clientSocket = new Socket();
+                clientSocket.connect(servers.get(server), 100);
+                clientSocket.setSoTimeout(100);
+                scanner = new Scanner(clientSocket.getInputStream());
+                printStream = new PrintStream(clientSocket.getOutputStream());
+
+                printStream.println("Request:" + logicalClock.getLogicalClock().toString() + ":" + serverID);
+                printStream.flush();
+                
+                while (scanner.hasNextLine()) {
+                    response = scanner.nextLine();
+                    if (response.contains("Acknowledgement")) { 
+                        acknowledgements++; 
+                        break;
+                    }
+                }
+                clientSocket.close();
+            }
+            catch (IOException e) {
+                deprecateServer(serverID);
+            }
+        }
+    }
+
+    /*************** Same as project 3 ********************/
 
     private static String execute(String command) {
         String tokens[] = command.split(" ");
@@ -294,135 +422,6 @@ public class Server {
             }
         }
         return false;
-    }
-
-
-
-
-
-    public static class ServerListener implements Runnable {
-        public void run() {
-            submitNewServerProcess();
-        }
-    }
-
-    private static void submitNewServerProcess() {    
-        try {
-            ServerSocket serverSocket = new ServerSocket(servers.get(serverID).getPort());
-            while (true) {
-                Socket socket = serverSocket.accept();
-                executorService.submit(new ServerTask(socket));
-            }
-        }
-        catch (IOException e) {
-            e.printStackTrace();
-        }           
-    }      
-
-    public static class ServerTask implements Runnable {
-        private Socket serverSocket;
-
-        ServerTask(Socket serverSocket) {
-            this.serverSocket = serverSocket;
-        }
-
-        public void run() {
-            serviceServerTask(serverSocket);
-        }
-    }
-
-    private static void serviceServerTask(Socket socket) {
-        String command;
-        String response;
-        PrintStream printStream;
-        Scanner scanner;
-
-        try {
-            scanner = new Scanner(socket.getInputStream());
-            printStream = new PrintStream(socket.getOutputStream());
-            command = scanner.nextLine();
-            if (command == null) { return; }
-            String[] tokens = command.split(":");
-
-            if (tokens[0].equals("Request")) {
-                int processID = Integer.parseInt(tokens[1]);
-                pendingQueue.add(processID);
-                send("Acknowledgement:" + logicalClock.toString());
-            }
-            else if (tokens[0].equals("Release")) {
-                pendingQueue.poll();
-            } 
-            else {
-                // Client task
-                requestCriticalSection();
-                response = execute(command);
-                releaseCriticalSection(command);
-
-                printStream.println(response);
-                printStream.flush();
-            }       
-            logicalClock.getAndIncrement();           
-        }   
-        catch (IOException e) {
-            e.printStackTrace();
-        }                 
-    }   
-
-    private static void requestCriticalSection() {
-        executorService.submit(new ClientRequest());
-        Integer processID = requestID.getAndIncrement();
-        pendingQueue.add(processID);
-        while (timedOutServers.contains(pendingQueue.peek())) { pendingQueue.poll(); }
-        while (pendingQueue.peek() != processID);
-        while (acknowledgements != serverInstances - 1);
-    }
-
-    private static void releaseCriticalSection(String command) {
-        String release = "Release:" + logicalClock.toString() + ":" + servers.get(serverID).getPort();
-        send(command);
-        pendingQueue.poll();
-    }
-
-    private static void send(String message) {
-        for (int server = 1; server < serverInstances; server++) {
-            if (server != serverID && !timedOutServers.contains(server)) {
-                executorService.submit(new ServerCommunication(server, message));
-            }
-        }
-    }
-
-    public static class ClientRequest implements Runnable {
-        public void run() {
-            PrintStream printStream;
-            Scanner scanner;
-            String response;
-
-            try {
-                for (int server = 1; server < serverInstances; server++) {
-                    if (server == serverID) {
-                        Socket clientSocket = new Socket();
-                        clientSocket.connect(servers.get(server), 100);
-                        clientSocket.setSoTimeout(100);
-                        scanner = new Scanner(clientSocket.getInputStream());
-                        printStream = new PrintStream(clientSocket.getOutputStream());
-                        printStream.println("Request:" + logicalClock.toString() + ":" + servers.get(server).getPort());
-                        printStream.flush();
-                        
-                        while (scanner.hasNextLine()) {
-                            response = scanner.nextLine();
-                            if (response.contains("Acknowledgement")) { 
-                                acknowledgements++; 
-                                break;
-                            }
-                        }
-                        clientSocket.close();
-                    }
-                }
-            }
-            catch (IOException e) {
-                e.printStackTrace();
-            }
-        }
     }
 }
 
