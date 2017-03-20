@@ -14,8 +14,9 @@ public class TimeStamp {
 		this.processID = processID;
 	}
 
-	// 1 if invoking timestamp has higher priority
-	// -1 if other has higher priority
+	// 1 if invoking timestamp has higher priority / smallest
+	// 0 if same timestamp
+	// -1 if other has higher priority / smallest
 	public int compare(TimeStamp other) {
 		if (this.logicalClock < other.getLogicalClock()) {
 			return 1;
@@ -25,6 +26,11 @@ public class TimeStamp {
 		{
 			return 1;
 		}
+		if (this.logicalClock == other.getLogicalClock() &&
+			this.processID == other.getLogicalClock()) 
+		{
+			return 0;
+		}
 		return -1;
 	}
  
@@ -32,10 +38,10 @@ public class TimeStamp {
  		this.logicalClock++;
  	}
 
- 	public void setLogicalClockReceive(TimeStamp other) {
- 		this.logicalClock = Math.max(logicalClock, other.getLogicalClock()) + 1;
+ 	public void setLogicalClockReceive(int senderLogicalClock) {
+ 		this.logicalClock = Math.max(logicalClock, senderLogicalClock) + 1;
  	}
- 	
+
 	public int getLogicalClock() {
 		return logicalClock;
 	}

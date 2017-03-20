@@ -22,6 +22,7 @@ public class Server {
     private static int serverInstances;
     private static AtomicInteger requestID;
 
+    private TimeStamp myTimeStamp;
     //private static PriorityQueue<Integer> pendingQueue;
     private static ArrayList<TimeStamp> pendingQueue;
 
@@ -124,7 +125,7 @@ public class Server {
 
     private static void releaseCriticalSection(String command) {
         acknowledgements = 0;
-        String release = "Release: " + command + ":" + serverID;
+        String release = "Release: " + myTimeStamp.getLogicalClock().toString() + ":" + serverID;
         send(command);
         pendingQueue.poll();
     }
@@ -422,29 +423,22 @@ public class Server {
             String[] tokens = command.split(":");
 
             if (tokens[0].equals("Request")) {
-                int processID = Integer.parseInt(tokens[1]);
-                if (serverMessages[processID] > 0) {
-                    serverMessages[processID]--;
-                }
-                else {
-                    pendingQueue.add(processID);
-                }
+                myTimeStamp.setLogicalClockReceive(Integer.parseInt(tokens[1]));
+                pendingQueue.add(myTimeStamp);
             }
             else if (tokens[0].equals("Release")) {
-                response = execute(tokens[1]);
-                Integer processID = Integer.parseInt(tokens[2]);
-                if (!pendingQueue.contains(processID)) {
-                    serverMessages[processID]++;
-                }
-                else {
-                    pendingQueue.poll();
+                myTimeStamp.setLogicalClockReceive(Integer.parseInt(tokens[1]));
+                TimeStamp senderTimeStamp = search(Integer.parseInt(tokens[2]));
+                pendingQueue.remove(senderTimeStamp);
+                if (acknowledgements == serverInstances - 1 && isSmallest()) {
+                    execute(command);
                 }
             }
             else if (tokens[0].equals("Acknowledgement")) {
+                myTimeStamp.setLogicalClockReceive(Integer.parseInt(tokens[1]));               
                 acknowledgements++;
-                int senderLogicalClock = Integer.parseInt(tokens[1]);
-                int senderProcessID = Integer.parseInt(tokens[2]);
-                if (acknowledgements == serverInstances - 1 && isSmallest(senderLogicalClock, senderProcessID)) {
+
+                if (acknowledgements == serverInstances - 1 && isSmallest()) {
                     execute(command);
                 }
             }
@@ -456,6 +450,16 @@ public class Server {
         catch (IOException e) {
             e.printStackTrace();
         }                 
+    }
+
+    private boolean isSmallest() {
+        TimeStamp timeStamp = search(serverID);
+        for (TimeStamp other : pendingQueue) {
+            if (timeStamp.compare(other) == 1) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private static void serviceClientTask(Socket socket) {
