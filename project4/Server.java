@@ -22,9 +22,12 @@ public class Server {
     private static int serverInstances;
     private static AtomicInteger requestID;
 
-    private static PriorityQueue<Integer> pendingQueue;
+    //private static PriorityQueue<Integer> pendingQueue;
+    private static ArrayList<TimeStamp> pendingQueue;
 
     private static int[] serverMessages;
+
+    private int acknowledgements = 0;
   
     public static void main (String[] args) throws IOException {
         Scanner scanner = new Scanner(System.in);
@@ -36,7 +39,7 @@ public class Server {
         clients = new ArrayList<User>();
         timedOutServers = new ArrayList<Integer>();        
         servers = new ArrayList<InetSocketAddress>(serverInstances);
-        pendingQueue = new PriorityQueue<Integer>();
+        pendingQueue = new PriorityQueue<TimeStamp>();
 
         executorService = Executors.newCachedThreadPool();
 
@@ -52,7 +55,6 @@ public class Server {
         requestID = new AtomicInteger(serverInstances);
 
         executorService.submit(new ServerListener());
-        executorService.submit(new ClientListener());
     }         
 
     static public class ServerCommunication implements Runnable {
@@ -92,21 +94,36 @@ public class Server {
         }
     }
 
-    private static void deprecateServer(int serverNumber) {
+    private static void deprecateServer(int serverID) {
         timedOutServers.add(serverNumber);
-        pendingQueue.remove(serverNumber);
+        remove(serverID);
         serverInstances--;
     }
 
+    private static void remove(int serverID) {
+        TimeStamp timeStampToRemove = search(serverID);
+        pendingQueue.remove(timeStampToRemove);
+    }
+
     private static void requestCriticalSection() {
-        Integer processID = requestID.getAndIncrement();
-        pendingQueue.add(processID);
+        TimeStamp timeStamp = search(serverID);
+        timeStamp.setLogicalClockSend();
+
         String request = "Request:" + serverID;
         send(request);
         waitUntilReadyFor(processID);
     }
 
+    private static TimeStamp search(int serverID) {
+        for (TimeStamp timeStamp : pendingQueue) {
+            if (timeStamp.getPID() == serverID) {
+                return timeStamp;
+            }
+        }
+    }
+
     private static void releaseCriticalSection(String command) {
+        acknowledgements = 0;
         String release = "Release: " + command + ":" + serverID;
         send(command);
         pendingQueue.poll();
@@ -422,6 +439,18 @@ public class Server {
                 else {
                     pendingQueue.poll();
                 }
+            }
+            else if (tokens[0].equals("Acknowledgement")) {
+                acknowledgements++;
+                int senderLogicalClock = Integer.parseInt(tokens[1]);
+                int senderProcessID = Integer.parseInt(tokens[2]);
+                if (acknowledgements == serverInstances - 1 && isSmallest(senderLogicalClock, senderProcessID)) {
+                    execute(command);
+                }
+            }
+            else {
+                // Handle client command
+                executorService.submit(new ClientListener());
             }                   
         }   
         catch (IOException e) {

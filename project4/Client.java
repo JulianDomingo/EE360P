@@ -43,9 +43,7 @@ public class Client {
                 printStream = new PrintStream(clientSocket.getOutputStream());
                 printStream.println(command);
                 printStream.flush();
-                responseOfTCPServer = scanner.nextLine();
-                clientSocket.close();
-                return responseOfTCPServer;
+                scanner.nextLine();
             }
             catch (SocketTimeoutException e) {
                 deprecateServer();
@@ -55,7 +53,12 @@ public class Client {
             }
             catch (IOException e) {
                 e.printStackTrace();               
-            }   
+            } 
+            finally {
+                responseOfTCPServer = scanner.nextLine();
+                clientSocket.close();
+                return responseOfTCPServer;
+            }  
         }
     }  
 
