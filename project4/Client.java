@@ -9,10 +9,11 @@ import java.io.*;
 
 public class Client {
     private static ArrayList<InetSocketAddress> servers; 
+    private static int serverInstances;
 
     public static void main (String[] args) {
         Scanner scanner = new Scanner(System.in);   
-        int serverInstances = scanner.nextInt();
+        serverInstances = scanner.nextInt();
 
         servers = new ArrayList<InetSocketAddress>(serverInstances); 
 
@@ -59,6 +60,7 @@ public class Client {
 
     private static void deprecateServer() {
         servers.remove(0);
+        serverInstances--;
     }  
     
     private static String execute(String command) {

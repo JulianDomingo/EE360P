@@ -94,6 +94,7 @@ public class Server {
     private static void deprecateServer(int serverNumber) {
         timedOutServers.add(serverNumber);
         pendingQueue.remove(serverNumber);
+        serverInstances--;
     }
 
     private static void requestCriticalSection() {
