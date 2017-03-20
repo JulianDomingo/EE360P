@@ -33,17 +33,19 @@ public class Client {
         String responseOfTCPServer;
         PrintStream printStream;
         Scanner scanner;
+        Socket clientSocket;
 
         while (true) {
             try {
-                Socket clientSocket = new Socket();
-                clientSocket.connect(server, 100);
-                clientSocket.setSoTimeout(100);
+                clientSocket = new Socket();
                 scanner = new Scanner(clientSocket.getInputStream());
+                clientSocket.connect(servers.get(0), 100);
                 printStream = new PrintStream(clientSocket.getOutputStream());
                 printStream.println(command);
                 printStream.flush();
-                scanner.nextLine();
+                responseOfTCPServer = scanner.nextLine();
+                clientSocket.close();
+                return responseOfTCPServer;
             }
             catch (SocketTimeoutException e) {
                 deprecateServer();
@@ -54,11 +56,6 @@ public class Client {
             catch (IOException e) {
                 e.printStackTrace();               
             } 
-            finally {
-                responseOfTCPServer = scanner.nextLine();
-                clientSocket.close();
-                return responseOfTCPServer;
-            }  
         }
     }  
 
