@@ -126,7 +126,6 @@ public class Server {
         acknowledgements = 0;
         String release = "Release: " + myTimeStamp.getLogicalClock().toString() + ":" + serverID;
         send(command);
-        pendingQueue.poll();
     }
 
     private static void send(String message) {
