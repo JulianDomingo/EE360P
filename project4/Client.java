@@ -31,8 +31,7 @@ public class Client {
         String responseOfTCPServer;
         PrintStream printStream;
         Scanner scanner;
-    
-        // Loop until server connection is established based on proximity property
+
         while (true) {
             try {
                 Socket clientSocket = new Socket();
@@ -47,6 +46,9 @@ public class Client {
                 return responseOfTCPServer;
             }
             catch (SocketTimeoutException e) {
+                deprecateServer();
+            }
+            catch (ConnectException e) {
                 deprecateServer();
             }
             catch (IOException e) {
