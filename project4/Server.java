@@ -17,10 +17,9 @@ public class Server {
     private static ArrayList<Item> inventory;
     private static ArrayList<User> clients;
     
-    private static int serverID;
+    private int serverID;
 
     private static int serverInstances;
-    private static AtomicInteger requestID;
 
     private TimeStamp myTimeStamp;
     private ArrayList<TimeStamp> pendingQueue = new ArrayList<TimeStamp>();
@@ -31,7 +30,7 @@ public class Server {
   
     public static void main (String[] args) throws IOException {
         Scanner scanner = new Scanner(System.in);
-        serverID = scanner.nextInt();
+        parseServerID(scanner);
         serverInstances = scanner.nextInt();
         String inventoryPath = scanner.next();
 
@@ -50,10 +49,13 @@ public class Server {
 
         parse(inventoryPath);
 
-        requestID = new AtomicInteger(serverInstances);
-
         executorService.submit(new ServerListener());
-    }         
+    }  
+
+    private static void parseServerID(Scanner scanner) {
+        serverID = scanner.nextInt();
+    }
+
 
     public class ServerCommunication implements Runnable {
         private String message;
