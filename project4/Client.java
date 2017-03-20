@@ -23,7 +23,6 @@ public class Client {
         while (scanner.hasNextLine()) {
             String command = scanner.nextLine();
             String serverResponse = execute(command); 
-
             System.out.println(serverResponse); 
         }
     }

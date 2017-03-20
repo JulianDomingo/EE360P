@@ -51,8 +51,8 @@ public class Server {
 
         requestID = new AtomicInteger(serverInstances);
 
-        executorService.submit(new ServerListener());
         executorService.submit(new ClientListener());
+        executorService.submit(new ServerListener());
     }         
 
     static public class ServerCommunication implements Runnable {
@@ -306,7 +306,7 @@ public class Server {
                 return item;
             }
         }
-        return null;
+        return null; 
     }
 
     private static boolean inventoryHasEnoughOf(String productName, int desiredQuantity) {
