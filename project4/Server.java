@@ -51,7 +51,6 @@ public class Server {
 
         requestID = new AtomicInteger(serverInstances);
 
-        executorService.submit(new ClientListener());
         executorService.submit(new ServerListener());
     }         
 
@@ -346,26 +345,7 @@ public class Server {
         catch (IOException e) {
             e.printStackTrace();
         }           
-    }
-
-    public static class ClientListener implements Runnable {
-        public void run() {
-            submitNewClientProcess();
-        }
-    }   
-
-    private static void submitNewClientProcess() {
-        try {
-            ServerSocket serverSocket = new ServerSocket(servers.get(serverID).getPort());
-            while (true) {
-                Socket socket = serverSocket.accept();
-                executorService.submit(new ClientTask(socket));
-            }
-        }
-        catch (IOException e) {
-            e.printStackTrace();
-        }
-    }        
+    }      
 
     public static class ServerTask implements Runnable {
         private Socket serverSocket;
@@ -379,18 +359,6 @@ public class Server {
         }
     }
 
-    public static class ClientTask implements Runnable {
-        private Socket clientSocket;
-
-        ClientTask(Socket clientSocket) {
-            this.clientSocket = clientSocket;
-        }
-
-        public void run() {
-            serviceClientTask(clientSocket);
-        }
-    }
-
     private static void serviceServerTask(Socket socket) {
         String command;
         String response;
@@ -401,6 +369,7 @@ public class Server {
             scanner = new Scanner(socket.getInputStream());
             printStream = new PrintStream(socket.getOutputStream());
             command = scanner.nextLine();
+            if (command == null) { return; }
             String[] tokens = command.split(":");
 
             if (tokens[0].equals("Request")) {
@@ -426,26 +395,6 @@ public class Server {
         catch (IOException e) {
             e.printStackTrace();
         }                 
-    }
-
-    private static void serviceClientTask(Socket socket) {
-        String command;
-        String response;
-        PrintStream printStream;
-        Scanner scanner;
-
-        try {
-            scanner = new Scanner(socket.getInputStream());
-            printStream = new PrintStream(socket.getOutputStream());
-            command = scanner.nextLine();
-            requestCriticalSection();
-            response = execute(command);
-            releaseCriticalSection(command);
-            printStream.println(response);
-        }
-        catch (IOException e) {
-            e.printStackTrace();
-        }
-    }    
+    }   
 }
 
