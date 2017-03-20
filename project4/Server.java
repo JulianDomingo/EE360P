@@ -212,7 +212,7 @@ public class Server {
 
             if (tokens[0].equals("Request")) {
                 myTimeStamp.setLogicalClockReceive(Integer.parseInt(tokens[1]));
-                pendingQueue.add(myTimeStamp);
+                pendingQueue.add(new TimeStamp(Integer.parseInt(tokens[1]), Integer.parseInt(tokens[2])));
             }
             else if (tokens[0].equals("Release")) {
                 myTimeStamp.setLogicalClockReceive(Integer.parseInt(tokens[1]));
