@@ -27,7 +27,7 @@ public class Client {
         }
     }
 
-    private static String send(InetSocketAddress server, String command) {
+    private static String send(String command) {
         String responseOfTCPServer;
         PrintStream printStream;
         Scanner scanner;
@@ -35,7 +35,7 @@ public class Client {
         while (true) {
             try {
                 Socket clientSocket = new Socket();
-                clientSocket.connect(server, 100);
+                clientSocket.connect(servers.get(0), 100);
                 clientSocket.setSoTimeout(100);
                 scanner = new Scanner(clientSocket.getInputStream());
                 printStream = new PrintStream(clientSocket.getOutputStream());
@@ -80,7 +80,7 @@ public class Client {
     
     private static String sendToTCPServer(String command) {
         // Assumed majority of servers will not crash, so "severs.get(0)" will never fail.
-        String serverResponse = send(servers.get(0), command);
+        String serverResponse = send(command);
         if (command.split(" ")[0].matches("(?i)list|search")) {
             serverResponse = reformatServerResponse(serverResponse);
         }
