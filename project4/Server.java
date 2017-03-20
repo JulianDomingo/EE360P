@@ -25,8 +25,6 @@ public class Server {
     private TimeStamp myTimeStamp;
     private ArrayList<TimeStamp> pendingQueue;
 
-    private static int[] serverMessages;
-
     private int acknowledgements = 0;
   
     public static void main (String[] args) throws IOException {
@@ -113,7 +111,6 @@ public class Server {
 
         String request = "Request:" + myTimeStamp.getLogicalClock().toString() + ":" + serverID;
         send(request);
-        waitUntilReadyFor(processID);
     }
 
     private static TimeStamp search(int serverID) {
@@ -138,11 +135,6 @@ public class Server {
                 executorService.submit(new ServerCommunication(server, message));
             }
         }
-    }
-
-    private static void waitUntilReadyFor(int processID) {
-        while (timedOutServers.contains(pendingQueue.peek())) { pendingQueue.poll(); }
-        while (pendingQueue.peek() != processID);
     }
 
     public static class ServerListener implements Runnable {
@@ -243,7 +235,6 @@ public class Server {
                 myTimeStamp.setLogicalClockInternal();
                 // Handle client command
                 executorService.submit(new ClientListener());
-
             }                   
         }   
         catch (IOException e) {
@@ -419,12 +410,6 @@ public class Server {
         String IPAddress = serverInformation[0];
         int portNumber = Integer.parseInt(serverInformation[1]);
         servers.add(new InetSocketAddress(IPAddress, portNumber));
-    }
-
-    private static void instantiateServerMessages() {
-        for (int server = 0; server < serverInstances; server++) {
-            serverMessages[server] = 0;
-        }
     }
 
     private static User findUserThroughName(String userName) {
