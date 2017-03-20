@@ -94,7 +94,7 @@ public class Server {
         }
     }
 
-    private static void deprecateServer(int serverID) {
+    private static void deprecateServer(int serverID) {   
         timedOutServers.add(serverNumber);
         remove(serverID);
         serverInstances--;
@@ -102,14 +102,16 @@ public class Server {
 
     private static void remove(int serverID) {
         TimeStamp timeStampToRemove = search(serverID);
-        pendingQueue.remove(timeStampToRemove);
+        if (timeStampToRemove != null) {
+            pendingQueue.remove(timeStampToRemove);
+        }
     }
 
     private static void requestCriticalSection() {
         TimeStamp timeStamp = search(serverID);
         timeStamp.setLogicalClockSend();
 
-        String request = "Request:" + serverID;
+        String request = "Request:" + myTimeStamp.getLogicalClock().toString() + ":" + serverID;
         send(request);
         waitUntilReadyFor(processID);
     }
@@ -120,6 +122,7 @@ public class Server {
                 return timeStamp;
             }
         }
+        return null;
     }
 
     private static void releaseCriticalSection(String command) {
@@ -279,7 +282,7 @@ public class Server {
     }   
 
     /***************** PARSING AND SAME AS PROJECT 3 **************/
-    
+
     private static String execute(String command) {
         String tokens[] = command.split(" ");
 
