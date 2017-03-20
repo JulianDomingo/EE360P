@@ -22,7 +22,8 @@ public class Client {
 
         while (scanner.hasNextLine()) {
             String command = scanner.nextLine();
-            String serverResponse = execute(command);           
+            String serverResponse = execute(command); 
+
             System.out.println(serverResponse); 
         }
     }
@@ -80,6 +81,22 @@ public class Client {
     
     private static String sendToTCPServer(String command) {
         // Assumed majority of servers will not crash, so "severs.get(0)" will never fail.
-        return send(servers.get(0), command);
+        String serverResponse = send(servers.get(0), command);
+        if (command.split(" ")[0].matches("(?i)list|search")) {
+            serverResponse = reformatServerResponse(serverResponse);
+        }
+        return serverResponse;
     }   
+
+    private static String reformatServerResponse(String serverResponse) {
+        String reformattedResponse = "";
+        String[] items = serverResponse.split("\\$");
+
+        for (String item : items) {
+            reformattedResponse += item;
+            reformattedResponse += "\r\n";
+        }
+
+        return reformattedResponse;
+    }
 }

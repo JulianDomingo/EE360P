@@ -340,7 +340,7 @@ public class Server {
             ServerSocket serverSocket = new ServerSocket(servers.get(serverID).getPort());
             while (true) {
                 Socket socket = serverSocket.accept();
-                executorService.submit(new ClientTask(socket));
+                executorService.submit(new ServerTask(socket));
             }
         }
         catch (IOException e) {
@@ -359,7 +359,7 @@ public class Server {
             ServerSocket serverSocket = new ServerSocket(servers.get(serverID).getPort());
             while (true) {
                 Socket socket = serverSocket.accept();
-                executorService.submit(new ServerTask(socket));
+                executorService.submit(new ClientTask(socket));
             }
         }
         catch (IOException e) {
