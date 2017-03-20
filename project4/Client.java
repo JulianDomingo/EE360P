@@ -13,7 +13,7 @@ public class Client {
 
     public static void main (String[] args) {
         Scanner scanner = new Scanner(System.in);   
-        serverInstances = scanner.nextInt();
+        int serverInstances = scanner.nextInt();
 
         servers = new ArrayList<InetSocketAddress>(serverInstances); 
 
@@ -24,6 +24,7 @@ public class Client {
         while (scanner.hasNextLine()) {
             String command = scanner.nextLine();
             String serverResponse = execute(command); 
+
             System.out.println(serverResponse); 
         }
     }
