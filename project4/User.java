@@ -14,7 +14,7 @@ public class User {
         orderHistory = new ArrayList<Order>();
     }
 
-    synchronized public Order getOrder(int orderToObtain) {
+    public Order getOrder(int orderToObtain) {
         for (Order order : orderHistory) {
             if (order.getID() == orderToObtain) {
                 return order;
@@ -23,11 +23,11 @@ public class User {
         return null;
     }
     
-    synchronized public void addOrder(Order order) {
+    public void addOrder(Order order) {
         orderHistory.add(order);
     }
         
-    synchronized public boolean removeOrder(int orderToRemove) {
+    public boolean removeOrder(int orderToRemove) {
         for (Order order : orderHistory) {
             if (order.getID() == orderToRemove) {
                 orderHistory.remove(orderHistory.indexOf(order));
@@ -37,20 +37,15 @@ public class User {
         return false;
     }
 
-    synchronized public String getUsername() {
+    public String getUsername() {
         return name;
     }
 
-    synchronized public ArrayList<Order> getOrderHistory() {
+    public ArrayList<Order> getOrderHistory() {
         return orderHistory;
     }
 
-    synchronized public boolean hasPlacedOrders() {
+    public boolean hasPlacedOrders() {
         return orderHistory.size() != 0;
     }                       
 }
-
-
-
-
-
