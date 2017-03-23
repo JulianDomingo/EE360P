@@ -165,12 +165,18 @@ public class Server {
                 pendingQueue.add(new TimeStamp(Integer.parseInt(tokens[1]), Integer.parseInt(tokens[2])));
             }
             else if (tokens[0].equals("Release")) {
+                PrintStream printer = new PrintStream(socket.getOutputStream());
+                printer.println("received");
+                printer.flush();
                 myTimeStamp.setLogicalClockReceive(Integer.parseInt(tokens[1]));
                 TimeStamp senderTimeStamp = search(Integer.parseInt(tokens[2]));
                 pendingQueue.remove(senderTimeStamp);
                 checkCriticalSection();
             }
             else if(tokens[0].equals("Update")){
+                PrintStream printer = new PrintStream(socket.getOutputStream());
+                printer.println("received");
+                printer.flush();
             	myTimeStamp.setLogicalClockReceive(Integer.parseInt(tokens[1]));
             	execute(tokens[2]);
             }
@@ -206,7 +212,7 @@ public class Server {
 	        printStream.println(response);
 	        printStream.flush();
 		} catch (IOException e) {
-			e.printStackTrace();
+
 		}
     }
     
