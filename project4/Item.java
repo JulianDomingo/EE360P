@@ -8,25 +8,24 @@ public class Item {
 
     private String itemName;
 
-    Item(String itemName, int quantity) {
+    public Item(String itemName, int quantity) {
         this.itemName = itemName;
         this.quantity = quantity;
     }
 
-    synchronized String getItemName() {
+    public String getItemName() {
         return itemName;
     }
 
-    synchronized int getCurrentQuantity() {
+    public int getCurrentQuantity() {
         return quantity;
     }
 
-    synchronized void purchaseQuantityOf(int amount) {
+    public void purchaseQuantityOf(int amount) {
         quantity -= amount;
     }
 
-    synchronized void returnQuantityOf(int amount) {
+    public void returnQuantityOf(int amount) {
         quantity += amount;
     }
 }    
-            
