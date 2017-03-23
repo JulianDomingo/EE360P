@@ -10,33 +10,37 @@ import java.net.*;
 import java.io.*;
 
 public class Server {
-    private ArrayList<InetSocketAddress> servers;
-    private ArrayList<Integer> timedOutServers;
+    private static ArrayList<InetSocketAddress> servers;
+    private static ArrayList<Integer> timedOutServers;
     private static ExecutorService executorService;
     
     private static ArrayList<Item> inventory;
     private static ArrayList<User> clients;
     
-    private int serverID;
+    private static int serverID;
 
     private static int serverInstances;
 
-    private TimeStamp myTimeStamp;
-    private ArrayList<TimeStamp> pendingQueue = new ArrayList<TimeStamp>();
+    private static TimeStamp myTimeStamp;
+    private static ArrayList<TimeStamp> pendingQueue = new ArrayList<TimeStamp>();
 
-    private PriorityQueue<ClientInformation> clientCommands = new PriorityQueue<ClientInformation>();
+    private static PriorityQueue<ClientInformation> clientCommands = new PriorityQueue<ClientInformation>();
 
-    private int acknowledgements = 0;
+    private static int acknowledgements = 0;
   
     public static void main (String[] args) throws IOException {
         Scanner scanner = new Scanner(System.in);
-        parseServerID(scanner);
+        System.out.print("Enter server ID: ");
+        serverID = scanner.nextInt();
+        System.out.print("Enter total number of servers: ");
         serverInstances = scanner.nextInt();
+        System.out.print("Enter inventory.txt file path: ");
         String inventoryPath = scanner.next();
+        System.out.println("");
 
         inventory = new ArrayList<Item>();
         clients = new ArrayList<User>();
-        timedOutServers = new ArrayList<Integer>();    
+        timedOutServers = new ArrayList<Integer>();
         servers = new ArrayList<InetSocketAddress>(serverInstances);
 
         executorService = Executors.newCachedThreadPool();
@@ -45,19 +49,19 @@ public class Server {
         System.out.println("[DEBUG] serverInstances: " + serverInstances);
         System.out.println("[DEBUG] inventory path: " + inventoryPath);
 
-        addServers(scanner);   
+        System.out.println("");
+
+        addServers(scanner);
 
         parse(inventoryPath);
 
         executorService.submit(new ServerListener());
-    }  
 
-    private static void parseServerID(Scanner scanner) {
-        serverID = scanner.nextInt();
+        int serverInstancePort = servers.get(serverID - 1).getPort();
+        System.out.println("Is server listening to port " + serverInstancePort + "?: " + isServerListening("127.0.0.1", serverInstancePort));
     }
 
-
-    public class ServerCommunication implements Runnable {
+    public static class ServerCommunication implements Runnable {
         private String message;
         private int serverNumber;
 
@@ -94,20 +98,20 @@ public class Server {
         }
     }
 
-    private void deprecateServer(int serverID) {   
+    private static void deprecateServer(int serverID) {   
         timedOutServers.add(serverID);
         remove(serverID);
         serverInstances--;
     }
 
-    private void remove(int serverID) {
+    private static void remove(int serverID) {
         TimeStamp timeStampToRemove = search(serverID);
         if (timeStampToRemove != null) {
             pendingQueue.remove(timeStampToRemove);
         }
     }
 
-    private void requestCriticalSection() {
+    private static void requestCriticalSection() {
         TimeStamp timeStamp = search(serverID);
         timeStamp.setLogicalClockSend();
 
@@ -115,7 +119,7 @@ public class Server {
         send(request);
     }
 
-    private TimeStamp search(int serverID) {
+    private static TimeStamp search(int serverID) {
         for (TimeStamp timeStamp : pendingQueue) {
             if (timeStamp.getPID() == serverID) {
                 return timeStamp;
@@ -124,13 +128,13 @@ public class Server {
         return null;
     }
 
-    private void releaseCriticalSection() {
+    private static void releaseCriticalSection() {
         acknowledgements = 0;
         String release = "Release: " + myTimeStamp.getLogicalClock() + ":" + serverID;
         send(release);
     }
 
-    private void send(String message) {
+    private static void send(String message) {
         for (int server = 0; server < serverInstances; server++) {
             if (server != serverID && !timedOutServers.contains(server)) {
                 executorService.submit(new ServerCommunication(server, message));
@@ -146,7 +150,8 @@ public class Server {
 
     private static void submitNewServerProcess() {    
         try {
-            ServerSocket serverSocket = new ServerSocket(servers.get(serverID).getPort());
+            // serverID - 1 since serverID's start from 1.
+            ServerSocket serverSocket = new ServerSocket(servers.get(serverID - 1).getPort());
             while (true) {
                 Socket socket = serverSocket.accept();
                 executorService.submit(new ServerTask(socket));
@@ -157,15 +162,15 @@ public class Server {
         }           
     }
 
-    public class ClientListener implements Runnable {
+    public static class ClientListener implements Runnable {
         public void run() {
             submitNewClientProcess();
         }
     }   
 
-    private void submitNewClientProcess() {
+    private static void submitNewClientProcess() {
         try {
-            ServerSocket serverSocket = new ServerSocket(servers.get(serverID).getPort());
+            ServerSocket serverSocket = new ServerSocket(servers.get(serverID - 1).getPort());
             while (true) {
                 Socket socket = serverSocket.accept();
                 executorService.submit(new ClientTask(socket));
@@ -176,7 +181,7 @@ public class Server {
         }
     }        
 
-    public class ServerTask implements Runnable {
+    public static class ServerTask implements Runnable {
         private Socket serverSocket;
 
         ServerTask(Socket serverSocket) {
@@ -188,7 +193,7 @@ public class Server {
         }
     }
 
-    public class ClientTask implements Runnable {
+    public static class ClientTask implements Runnable {
         private Socket clientSocket;
 
         ClientTask(Socket clientSocket) {
@@ -200,7 +205,7 @@ public class Server {
         }
     }
 
-    private void serviceServerTask(Socket socket) {
+    private static void serviceServerTask(Socket socket) {
         String command;
         String response;
         PrintStream printStream;
@@ -224,7 +229,7 @@ public class Server {
                 pendingQueue.remove(senderTimeStamp);
 
                 if (acknowledgements == serverInstances - 1 && isSmallest()) {
-                    String repsonse = execute(clientCommands.poll().getClientCommand());
+                    response = execute(clientCommands.poll().getClientCommand());
                     finishExecute(clientCommands.poll().getClientSocket(), response);                   
                 }
             }
@@ -233,7 +238,7 @@ public class Server {
                 acknowledgements++;
 
                 if (acknowledgements == serverInstances - 1 && isSmallest()) {
-                    String response = execute(clientCommands.poll().getClientCommand());
+                    response = execute(clientCommands.poll().getClientCommand());
                     finishExecute(clientCommands.poll().getClientSocket(), response);
                 }
             }
@@ -249,7 +254,7 @@ public class Server {
         }                 
     }
 
-    private boolean isSmallest() {
+    private static boolean isSmallest() {
         TimeStamp timeStamp = search(serverID);
         for (TimeStamp other : pendingQueue) {
             if (timeStamp.compare(other) == 1) {
@@ -259,7 +264,7 @@ public class Server {
         return false;
     }
 
-    private void serviceClientTask(Socket socket) {
+    private static void serviceClientTask(Socket socket) {
         String command;
         String response;
         PrintStream printStream;
@@ -276,10 +281,15 @@ public class Server {
         }
     }   
 
-    private void finishExecute(Socket clientSocket, String response) {
+    private static void finishExecute(Socket clientSocket, String response) {
         releaseCriticalSection();
-        printStream = new PrintStream(clientSocket.getOutputStream());
-        printStream.println(response);
+        try {
+            PrintStream printStream = new PrintStream(clientSocket.getOutputStream());
+            printStream.println(response);
+        }
+        catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     /***************** PARSING AND SAME AS PROJECT 3 **************/
@@ -411,12 +421,14 @@ public class Server {
     private static void addServers(Scanner scanner) {
         for (int server = 0; server < serverInstances; server++) {
             addNextServerFrom(scanner);
-            System.out.println("Address for server " + server + ": " + servers.get(server).getAddress());
+            System.out.println("Address for server " + (server + 1) + ": " + servers.get(server).getAddress());
         }
     }
 
     private static void addNextServerFrom(Scanner scanner) {
-        String[] serverInformation = scanner.nextLine().split(":");
+        System.out.print("Enter a server in the form '<IP Address>:<Port Number>': ");
+        String nextServer = scanner.next();
+        String[] serverInformation = nextServer.split(":");
         String IPAddress = serverInformation[0];
         int portNumber = Integer.parseInt(serverInformation[1]);
         servers.add(new InetSocketAddress(IPAddress, portNumber));
@@ -500,5 +512,22 @@ public class Server {
             return clientSocket;
         }
     } 
+
+    public static boolean isServerListening(String host, int port) {
+        Socket s = null;
+        try {
+            s = new Socket(host, port);
+            return true;
+        }
+        catch (Exception e) {
+            return false;
+        }
+        finally {
+            if(s != null) {
+                try {s.close();}
+                catch(Exception e){}
+            }
+        }
+    }
 }
 

@@ -12,8 +12,10 @@ public class Client {
     private static int serverInstances;
 
     public static void main (String[] args) {
-        Scanner scanner = new Scanner(System.in);   
+        Scanner scanner = new Scanner(System.in);
+        System.out.print("Enter total number of servers: ");
         int serverInstances = scanner.nextInt();
+        System.out.println("");
 
         servers = new ArrayList<InetSocketAddress>(serverInstances); 
 
@@ -22,10 +24,11 @@ public class Client {
         }
 
         while (scanner.hasNextLine()) {
-            String command = scanner.nextLine();
-            String serverResponse = execute(command); 
-
-            System.out.println(serverResponse); 
+            System.out.print("Enter a command: ");
+            String command = scanner.next();
+            String serverResponse = execute(command);
+            System.out.println(serverResponse);
+            System.out.println("");
         }
     }
 
@@ -37,9 +40,10 @@ public class Client {
 
         while (true) {
             try {
-                clientSocket = new Socket();
+                clientSocket = new Socket(servers.get(0).getAddress(), servers.get(0).getPort());
+                //clientSocket.connect(servers.get(0), 100);
+                clientSocket.setSoTimeout(100);
                 scanner = new Scanner(clientSocket.getInputStream());
-                clientSocket.connect(servers.get(0), 100);
                 printStream = new PrintStream(clientSocket.getOutputStream());
                 printStream.println(command);
                 printStream.flush();
@@ -51,6 +55,7 @@ public class Client {
                 deprecateServer();
             }
             catch (ConnectException e) {
+                e.printStackTrace();
                 deprecateServer();
             }
             catch (IOException e) {
@@ -75,7 +80,8 @@ public class Client {
     } 
     
     private static void addNextServerFrom(Scanner scanner) {
-        String[] serverInformation = scanner.nextLine().split(":");
+        System.out.print("Enter a server in the form '<IP Address>:<Port Number>': ");
+        String[] serverInformation = scanner.next().split(":");
         String IPAddress = serverInformation[0];
         int portNumber = Integer.parseInt(serverInformation[1]); 
         servers.add(new InetSocketAddress(IPAddress, portNumber));
