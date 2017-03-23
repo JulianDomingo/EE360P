@@ -27,7 +27,7 @@ public class TimeStamp {
 			return 1;
 		}
 		if (this.logicalClock == other.getLogicalClock() &&
-			this.processID == other.getLogicalClock()) 
+			this.processID == other.getPID()) 
 		{
 			return 0;
 		}
