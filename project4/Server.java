@@ -214,7 +214,8 @@ public class Server {
         try {
             scanner = new Scanner(socket.getInputStream());
             printStream = new PrintStream(socket.getOutputStream());
-            command = scanner.nextLine();
+            //command = scanner.nextLine();
+            command = scanner.next();
             String[] tokens = command.split(":");
 
             if (tokens[0].equals("Request")) {
@@ -244,6 +245,7 @@ public class Server {
             }
             else {
                 // Handle client command.
+                myTimeStamp = new TimeStamp(0, serverID);
                 myTimeStamp.setLogicalClockInternal();
                 executorService.submit(new ClientListener());
                 clientCommands.add(new ClientInformation(command, socket));
