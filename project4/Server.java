@@ -135,7 +135,7 @@ public class Server {
     }
 
     private static void send(String message) {
-        for (int server = 0; server < serverInstances; server++) {
+        for (int server = 1; server <= serverInstances; server++) {
             if (server != serverID && !timedOutServers.contains(server)) {
                 executorService.submit(new ServerCommunication(server, message));
             }
@@ -170,7 +170,7 @@ public class Server {
 
     private static void submitNewClientProcess() {
         try {
-            ServerSocket serverSocket = new ServerSocket(servers.get(serverID - 1).getPort());
+            //ServerSocket serverSocket = new ServerSocket(servers.get(serverID - 1).getPort());
             while (true) {
                 Socket socket = serverSocket.accept();
                 executorService.submit(new ClientTask(socket));
