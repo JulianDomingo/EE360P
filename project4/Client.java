@@ -34,22 +34,29 @@ public class Client {
 
     private static String send(InetSocketAddress server, String command) {
         String responseOfTCPServer;
-        PrintStream printStream;
-        Scanner scanner;
+        PrintWriter toServer;
+        BufferedReader fromServer;
         Socket clientSocket;
 
         while (true) {
             try {
                 clientSocket = new Socket(servers.get(0).getAddress(), servers.get(0).getPort());
                 //clientSocket.connect(servers.get(0), 100);
-                clientSocket.setSoTimeout(100);
-                scanner = new Scanner(clientSocket.getInputStream());
-                printStream = new PrintStream(clientSocket.getOutputStream());
-                printStream.println(command);
-                printStream.flush();
-                responseOfTCPServer = scanner.nextLine();
+                //clientSocket.setSoTimeout(100);
+                fromServer = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
+                toServer = new PrintWriter(clientSocket.getOutputStream());
+                toServer.println(command);
+                toServer.flush();
+
+                if (!isTimedOut(fromServer, 100)) {
+                    responseOfTCPServer = fromServer.readLine();
+                    return responseOfTCPServer;
+                }
+                else {
+                    deprecateServer();
+                }
+
                 clientSocket.close();
-                return responseOfTCPServer;
             }
             catch (SocketTimeoutException e) {
                 deprecateServer();
@@ -63,6 +70,22 @@ public class Client {
             } 
         }
     }  
+
+    private static boolean isTimedOut(BufferedReader fromServer, int timeOut) {
+        long startTime = System.currentTimeMillis();
+        try {
+            while (!fromServer.ready()) {
+                long currentTime = System.currentTimeMillis();
+                if (currentTime - startTime >= (long) timeOut) {
+                    return true;
+                }
+            }
+        }
+        catch (IOException e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
 
     private static void deprecateServer() {
         servers.remove(0);
