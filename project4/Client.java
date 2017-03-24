@@ -53,19 +53,21 @@ public class Client {
                 clientSocket.close();
                 return responseOfTCPServer;
             }
-            catch (NoSuchElementException e)
+            catch(NoSuchElementException e)
             {
             	deprecateServer();
             }
-            catch (SocketTimeoutException e) {
-                deprecateServer();
+            catch(SocketTimeoutException e)
+            {
+            	deprecateServer();
             }
-            catch (ConnectException e) {
-                deprecateServer();
+            catch(ConnectException e)
+            {
+            	deprecateServer();
             }
             catch (IOException e) {
                 e.printStackTrace();               
-            } 
+            }
         }
     }  
 
