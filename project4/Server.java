@@ -65,8 +65,8 @@ public class Server {
         send(release);
     }
 
+    //TODO: add StillAlive to check for crash between closing of last and opening of next socket
     private void send(String message) {
-    	ArrayList<Socket> connectedSockets = new ArrayList<Socket>();
         for (int server = 1; server < serverInstances + 1; server++) {
             if (server != serverID && !timedOutServers.contains(server)) {
                 try {
@@ -77,11 +77,10 @@ public class Server {
                     myTimeStamp.setLogicalClockSend();
                     printStream.println(message);
                     printStream.flush();
-                    executorService.submit(new StillAlive(clientSocket));
 	                while(scanner.nextLine().equals("alive"));
-	                connectedSockets.add(clientSocket);
-                    scanner.close();
                     printStream.close();
+                    scanner.close();
+                    clientSocket.close();
                 }
                 catch(NoSuchElementException e)
                 {
@@ -99,21 +98,6 @@ public class Server {
                     e.printStackTrace();
                 }
             }            
-        }
-        for (int server = 1; server < serverInstances + 1; server++) {
-            if (server != serverID && !timedOutServers.contains(server)) {
-            	try {
-            		Socket toClose = connectedSockets.get(server - 1);
-					PrintStream printStream = new PrintStream(toClose.getOutputStream());
-					printStream.println("finished");
-					printStream.flush();
-					printStream.close();
-					toClose.close();
-				} catch (IOException e) {
-					e.printStackTrace();
-				}
-            	
-            }
         }
     }
 
@@ -356,7 +340,6 @@ public class Server {
     private void deprecateServer(int serverID) {   
         timedOutServers.add(serverID);
         remove(serverID);
-        serverInstances--;
     }
     
     private void remove(int serverID) {
