@@ -17,6 +17,8 @@ public class Server {
     private ArrayList<User> clients;
     
     private int serverID;
+    
+    private boolean updated;
 
     private int serverInstances;
 
@@ -27,6 +29,7 @@ public class Server {
  
     public static void main (String[] args) throws IOException {
     	Server server = new Server();
+    	server.updated = false;
         Scanner scanner = new Scanner(System.in);
         server.parseServerID(scanner);
         server.myTimeStamp = new TimeStamp(1,server.serverID);
@@ -62,6 +65,7 @@ public class Server {
         send(release);
     }
 
+    //TODO: add StillAlive to check for crash between closing of last and opening of next socket
     private void send(String message) {
         for (int server = 1; server < serverInstances + 1; server++) {
             if (server != serverID && !timedOutServers.contains(server)) {
@@ -78,21 +82,22 @@ public class Server {
                     scanner.close();
                     clientSocket.close();
                 }
-                catch (SocketTimeoutException e) {
-                    deprecateServer(server);
-                }
                 catch(NoSuchElementException e)
                 {
                 	deprecateServer(server);
                 }
-                catch (ConnectException e) {
-                    deprecateServer(server);
+                catch(SocketTimeoutException e)
+                {
+                	deprecateServer(server);
+                }
+                catch(ConnectException e)
+                {
+                	deprecateServer(server);
                 }
                 catch (IOException e) {
                     e.printStackTrace();
-                }      
-            }
-            
+                }
+            }            
         }
     }
 
@@ -102,8 +107,8 @@ public class Server {
             while(true)
             {
                 Socket socket = serverSocket.accept();
-                executorService.submit(new ServerTask(socket));
                 executorService.submit(new StillAlive(socket));
+                executorService.submit(new ServerTask(socket));
             }
         }
         catch (IOException e) {
@@ -149,10 +154,8 @@ public class Server {
 
     private void serviceServerTask(Socket socket) {
         String command;
-        //TODO:add terminate message to server-server communication
         try {
             Scanner scanner = new Scanner(socket.getInputStream());
-            while(!scanner.hasNextLine());
             command = scanner.nextLine();
             String[] tokens = command.split(":");
             if (tokens[0].equals("Request")) {
@@ -166,7 +169,7 @@ public class Server {
             }
             else if (tokens[0].equals("Release")) {
                 PrintStream printer = new PrintStream(socket.getOutputStream());
-                printer.println("received");
+                printer.println("recieved");
                 printer.flush();
                 myTimeStamp.setLogicalClockReceive(Integer.parseInt(tokens[1]));
                 TimeStamp senderTimeStamp = search(Integer.parseInt(tokens[2]));
@@ -175,10 +178,36 @@ public class Server {
             }
             else if(tokens[0].equals("Update")){
                 PrintStream printer = new PrintStream(socket.getOutputStream());
-                printer.println("received");
+                printer.println("recieved");
                 printer.flush();
             	myTimeStamp.setLogicalClockReceive(Integer.parseInt(tokens[1]));
-            	execute(tokens[2]);
+            	int sender = Integer.parseInt(tokens[2]);
+            	updated = true;
+            	while(checkUpdated(sender) == 0);
+            	if(checkUpdated(sender) == -1)
+            	{
+            		deprecateServer(sender);
+            	}
+            	else
+            	{
+            		updated = false;
+                	execute(tokens[3]);
+            	}
+            }
+            else if(tokens[0].equals("crashed"))
+            {
+            	 PrintStream printer = new PrintStream(socket.getOutputStream());
+             	 myTimeStamp.setLogicalClockReceive(Integer.parseInt(tokens[1]));
+            	 int sender = Integer.parseInt(tokens[2]);
+                 printer.println(timedOutServers.contains(sender));
+                 printer.flush();
+            }
+            else if(tokens[0].equals("updated"))
+            {
+           	 PrintStream printer = new PrintStream(socket.getOutputStream());
+         	 myTimeStamp.setLogicalClockReceive(Integer.parseInt(tokens[1]));
+             printer.println(updated);
+             printer.flush();
             }
             else {
                 // Handle client command.
@@ -188,10 +217,72 @@ public class Server {
                 checkCriticalSection();
             }
         	scanner.close();
-        }   
-        catch (IOException e) {
-            e.printStackTrace();
         }
+        catch (IOException e) {
+
+        }
+    }
+    
+    /*return 0 if still checking servers, return 1 if all servers have recieved updated message, return -1 if the sender has crashed*/
+    private int checkUpdated(int sender){
+        for (int server = 1; server < serverInstances + 1; server++) {
+            if (server != serverID && !timedOutServers.contains(server) && sender != server) {
+                try {
+                    Socket clientSocket = new Socket(servers.get(server - 1).getHostName(),servers.get(server - 1).getPort());
+                    clientSocket.setSoTimeout(100);
+                    PrintStream printStream = new PrintStream(clientSocket.getOutputStream());
+                    Scanner scanner = new Scanner(clientSocket.getInputStream());
+                    myTimeStamp.setLogicalClockSend();
+                    String message = "updated:" + serverID;
+                    printStream.println(message);
+                    printStream.flush();
+                    String response;
+	                do{
+	                	response = scanner.nextLine();
+	                }while(response.equals("alive"));
+	                if(response.equals("false"))
+	                {
+	                	String question = "crashed:" + myTimeStamp.getLogicalClock() + ":" + sender;
+	                	printStream.println(question);
+	                	printStream.flush();
+	                    String answer;
+		                do{
+		                	answer = scanner.nextLine();
+		                }while(answer.equals("alive"));
+		                printStream.close();
+		                scanner.close();
+		                clientSocket.close();
+		                if(answer.equals("true"))
+		                {
+		                	return -1;
+		                }
+		                else
+		                {
+		                	return 0;
+		                }
+	                }
+                    printStream.close();
+                    scanner.close();
+                    clientSocket.close();
+                }
+                catch(NoSuchElementException e)
+                {
+                	deprecateServer(server);
+                }
+                catch(SocketTimeoutException e)
+                {
+                	deprecateServer(server);
+                }
+                catch(ConnectException e)
+                {
+                	deprecateServer(server);
+                }
+                catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }            
+        }
+        return 1;
     }
     
     private void checkCriticalSection(){
@@ -199,7 +290,7 @@ public class Server {
         if (isSmallest()) {
         	ClientInformation client = clientCommands.poll();
             response = execute(client.getClientCommand());
-            String update = "Update:" + myTimeStamp.getLogicalClock()  + ":" + client.getClientCommand();
+            String update = "Update:" + myTimeStamp.getLogicalClock()  + ":" + serverID + ":" + client.getClientCommand();
             send(update);
             finishExecute(client.getClientSocket(), response);
         }
@@ -212,7 +303,7 @@ public class Server {
 	        printStream.println(response);
 	        printStream.flush();
 		} catch (IOException e) {
-
+			e.printStackTrace();
 		}
     }
     
