@@ -21,8 +21,7 @@ public class TextAnalyzer extends Configured implements Tool {
     // The four template data types are:
     //     <Input Key Type, Input Value Type, Output Key Type, Output Value Type>
     public static class TextMapper extends Mapper<LongWritable, Text, Text, LongWritable> {
-        public void map(LongWritable key, Text value, Context context)
-                        throws IOException, InterruptedException
+        public void map(LongWritable key, Text value, Context context) throws IOException, InterruptedException
         {
             String sentence = value.toString();
             sentence = filter(sentence);
@@ -30,7 +29,7 @@ public class TextAnalyzer extends Configured implements Tool {
             
             while (iterator.hasMoreTokens()) {
                 word.set(iterator.nextToken());
-                context.collect(word, "1"); 
+                context.write(word, "1"); 
             }
         }
         
@@ -43,17 +42,16 @@ public class TextAnalyzer extends Configured implements Tool {
     // Replace "?" with your own key / value types
     // NOTE: combiner's output key / value types have to be the same as those of mapper
     public static class TextCombiner extends Reducer<?, ?, ?, ?> {
-        public void reduce(Text key, Iterable<Tuple> tuples, Context context)
-                           throws IOException, InterruptedException
+        public void reduce(Text key, Iterable<Tuple> tuples, Context context) throws IOException, InterruptedException
         {
             int occurrences = 0;
             Iterator<Tuple> iterator = tuples.iterator();
 
             while (iterator.hasNext()) {
                 occurrences += Integer.parseInt(iterator.next());
-            {
+            }
 
-            context.collect(key, occurrences);                
+            context.write(key, occurrences);                
         }
     }
 
@@ -62,8 +60,7 @@ public class TextAnalyzer extends Configured implements Tool {
     public static class TextReducer extends Reducer<?, ?, Text, Text> {
         private final static Text emptyText = new Text("");
 
-        public void reduce(Text key, Iterable<Tuple> queryTuples, Context context)
-            throws IOException, InterruptedException
+        public void reduce(Text key, Iterable<Tuple> queryTuples, Context context) throws IOException, InterruptedException
         {
             // Implementation of you reducer function
 
@@ -84,9 +81,8 @@ public class TextAnalyzer extends Configured implements Tool {
 
     public int run(String[] args) throws Exception {
         Configuration conf = this.getConf();
-
         // Create job
-        Job job = new Job(conf, "EID1_EID2"); // Replace with your EIDs
+        Job job = new Job(conf, "jad5348_apb973"); // Replace with your EIDs
         job.setJarByClass(TextAnalyzer.class);
 
         // Setup MapReduce job
