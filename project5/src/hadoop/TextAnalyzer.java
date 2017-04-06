@@ -117,8 +117,71 @@ public class TextAnalyzer extends Configured implements Tool {
         System.exit(res);
     }
 
-    // You may define sub-classes here. Example:
-    // public static class MyClass {
-    //
-    // }
+    public static class Tuple implements WriteableComparable {
+        private Text first;
+        private Text second;
+
+        public TextPair(Text first, Text second) {
+            set(first, second);  
+        }
+
+        public TextPair() {
+            set(new Text(), new Text());
+        }
+
+        public void set(Text first, Text second) {
+            this.first = first;
+            this.second = second;
+        }
+
+        public Text getFirst() {
+            return first;
+        }
+
+        public Text getSecond() {
+            return second;
+        }
+
+        @Override
+        public void readFields(DataInput in) throws IOException {
+            first.readFields(in);
+            second.readFields(in);
+        }
+
+        @Override
+        public void write(DataOutput out) throws IOException {
+            first.write(out);
+            second.write(out);
+        }        
+
+        @Override
+        public String toString() {
+            return first + " " + second;
+        }
+
+        @Override
+        public int compareTo(TextPair textPair) {
+            int compare = first.compareTo(textPair.first);
+
+            if (cmp != 0) {
+                return compare;
+            }
+
+            return second.compareTo(textPair.second);
+        }
+
+        @Override
+        public int hashCode(Object object) {
+            return first.hashCode()*163 + second.hashCode();
+        }
+
+        @Override
+        public boolean equals(Object object) {
+            if (object instanceof TextPair) {
+                TextPair textPair = (TextPair) object;
+                return first.equals(textPair.first) && second.equals(textPair.second);
+            }
+            return false;
+        }
+    }
 }
