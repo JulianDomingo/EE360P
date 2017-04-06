@@ -62,7 +62,12 @@ public class TextAnalyzer extends Configured implements Tool {
 
         public void reduce(Text key, Iterable<Tuple> queryTuples, Context context) throws IOException, InterruptedException
         {
-            // Implementation of you reducer function
+            int occurrences = 0;
+            Iterator<Tuple> iterator = queryTuples.iterator();
+
+            while (iterator.hasNext()) {
+                occurrences += Integer.parseInt(iterator.next().getSecond().toString());
+            }
 
             // Write out the results; you may change the following example
             // code to fit with your reducer function.
