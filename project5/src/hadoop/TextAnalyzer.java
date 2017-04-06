@@ -51,7 +51,7 @@ public class TextAnalyzer extends Configured implements Tool {
                 occurrences += Integer.parseInt(iterator.next());
             }
 
-            context.write(key, occurrences);                
+            context.write(key, new IntWritable(occurrences)); 
         }
     }
 
