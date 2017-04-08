@@ -15,6 +15,8 @@ import org.apache.hadoop.mapreduce.lib.output.TextOutputFormat;
 import org.apache.hadoop.util.Tool;
 import org.apache.hadoop.util.ToolRunner;
 
+import java.util.*;
+import java.io.*;
 
 public class TextAnalyzer extends Configured implements Tool {
     // The four template data types are:
@@ -29,7 +31,9 @@ public class TextAnalyzer extends Configured implements Tool {
             for (String queryWord : words) {
                 for (String contextWord : words) {
                     if (!queryWord.equals(contextWord)) {
-                        context.write(new Text(contextWord), new Tuple(queryWord, new IntWritable(1)))
+                        context.write(new Text(contextWord), new Tuple(new Text(queryWord), new IntWritable(1))); 
+                    }
+                }
             }
         }
         
@@ -47,16 +51,19 @@ public class TextAnalyzer extends Configured implements Tool {
             Map<String, Integer> queryWordQuantities = new HashMap<String, Integer>();
 
             for (Tuple tuple : tuples) {
-                if (queryWordQuantities.contains(tuple.getQueryWord())) {
-                    queryWordQuantities.put(tuple.getQueryWord(), tuple.getCount());
+                String queryWord = tuple.getQueryWord().toString();
+                int count = tuple.getCount().get();
+
+                if (queryWordQuantities.containsKey(queryWord)) {
+                    queryWordQuantities.put(queryWord, count);
                 }
                 else {
-                    queryWordQuantities.put(tuple.getQueryWord(), queryWordQuantities.get(tuple.getQueryWord()) + tuple.getCount());
+                    queryWordQuantities.put(queryWord, queryWordQuantities.get(queryWord) + count);
                 }
             }
 
             for (String queryWord : queryWordQuantities.keySet()) {
-                context.write(queryWord, queryWordQuantities.get(queryWord));
+                context.write(key, new Tuple(new Text(queryWord), new IntWritable(queryWordQuantities.get(queryWord))));
             }                
         }
     }
@@ -68,23 +75,27 @@ public class TextAnalyzer extends Configured implements Tool {
         {
             Map<String, Integer> queryWordQuantities = new HashMap<String, Integer>();
 
-            for (Tuple tuple : tuples) {
-                if (queryWordQuantities.contains(tuple.getQueryWord())) {
-                    queryWordQuantities.put(tuple.getQueryWord(), tuple.getCount());
+            for (Tuple tuple : queryTuples) {
+                String queryWord = tuple.getQueryWord().toString();
+                int count = tuple.getCount().get();
+
+                if (queryWordQuantities.containsKey(queryWord)) {
+                    queryWordQuantities.put(queryWord, count);
                 }
                 else {
-                    queryWordQuantities.put(tuple.getQueryWord(), queryWordQuantities.get(tuple.getQueryWord()) + tuple.getCount());
+                    queryWordQuantities.put(queryWord, queryWordQuantities.get(queryWord) + count);
                 }
             }
-
+        
             // Write out the results; you may change the following example
             // code to fit with your reducer function.
             //   Write out the current context key
             context.write(key, emptyText);
             //   Write out query words and their count
-            for(String queryWord: queryWordQuantities.keySet()){
+            for(String queryWord : queryWordQuantities.keySet()){
                 String count = queryWordQuantities.get(queryWord).toString() + ">";
-                queryWordText.set("<" + queryWord + ",");
+                //queryWord.set("<" + queryWord + ",");
+                Text queryWordText = new Text("<" + queryWord + ",");
                 context.write(queryWordText, new Text(count));
             }
             //   Empty line for ending the current context key
@@ -130,18 +141,18 @@ public class TextAnalyzer extends Configured implements Tool {
         System.exit(res);
     }
 
-    public static class Tuple implements WriteableComparable {
+    public static class Tuple implements WritableComparable<Tuple> {
         private Text queryWord;
         private IntWritable count;
 
-        public Tuple(Text queryWord, Text count) {
+        public Tuple(Text queryWord, IntWritable count) {
             this.queryWord = queryWord;
             this.count = count;
         }
 
         public Tuple() {
-            this.queryWord = "";
-            this.count = 0;
+            this.queryWord.set("");
+            this.count.set(0);
         }
 
         public void updateCount(IntWritable count) {
@@ -149,10 +160,10 @@ public class TextAnalyzer extends Configured implements Tool {
         }
 
         public Text getQueryWord() {
-            return first;
+            return queryWord;
         }
 
-        public Text getCount() {
+        public IntWritable getCount() {
             return count;
         }
 
@@ -173,18 +184,16 @@ public class TextAnalyzer extends Configured implements Tool {
             return queryWord + " " + count;
         }
 
-        @Override
         public int compareTo(Tuple tuple) {
             int compare = queryWord.compareTo(tuple.queryWord);
 
-            if (cmp != 0) {
+            if (compare != 0) {
                 return compare;
             }
 
             return count.compareTo(tuple.count);
         }
 
-        @Override
         public int hashCode(Object object) {
             return queryWord.hashCode()*163 + count.hashCode();
         }
