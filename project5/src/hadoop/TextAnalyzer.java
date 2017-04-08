@@ -17,19 +17,19 @@ import org.apache.hadoop.util.ToolRunner;
 
 
 public class TextAnalyzer extends Configured implements Tool {
-    private Text word = new Text();
     // The four template data types are:
     //     <Input Key Type, Input Value Type, Output Key Type, Output Value Type>
-    public static class TextMapper extends Mapper<LongWritable, Text, Text, LongWritable> {
+    public static class TextMapper extends Mapper<LongWritable, Text, Text, Tuple> {
         public void map(LongWritable key, Text value, Context context) throws IOException, InterruptedException
         {
             String sentence = value.toString();
             sentence = filter(sentence);
-            StringTokenizer iterator = new StringTokenizer(sentence);
-            
-            while (iterator.hasMoreTokens()) {
-                word.set(iterator.nextToken());
-                context.write(word, "1"); 
+            String[] words = sentence.split(" ");
+
+            for (String queryWord : words) {
+                for (String contextWord : words) {
+                    if (!queryWord.equals(contextWord)) {
+                        context.write(new Text(contextWord), new Tuple(queryWord, new IntWritable(1)))
             }
         }
         
@@ -41,32 +41,40 @@ public class TextAnalyzer extends Configured implements Tool {
 
     // Replace "?" with your own key / value types
     // NOTE: combiner's output key / value types have to be the same as those of mapper
-    public static class TextCombiner extends Reducer<?, ?, ?, ?> {
+    public static class TextCombiner extends Reducer<Text, Tuple, Text, Tuple> {
         public void reduce(Text key, Iterable<Tuple> tuples, Context context) throws IOException, InterruptedException
         {
-            int occurrences = 0;
-            Iterator<Tuple> iterator = tuples.iterator();
+            Map<String, Integer> queryWordQuantities = new HashMap<String, Integer>();
 
-            while (iterator.hasNext()) {
-                occurrences += Integer.parseInt(iterator.next());
+            for (Tuple tuple : tuples) {
+                if (queryWordQuantities.contains(tuple.getQueryWord())) {
+                    queryWordQuantities.put(tuple.getQueryWord(), tuple.getCount());
+                }
+                else {
+                    queryWordQuantities.put(tuple.getQueryWord(), queryWordQuantities.get(tuple.getQueryWord()) + tuple.getCount());
+                }
             }
 
-            context.write(key, new IntWritable(occurrences)); 
+            for (String queryWord : queryWordQuantities.keySet()) {
+                context.write(queryWord, queryWordQuantities.get(queryWord));
+            }                
         }
     }
 
-    // Replace "?" with your own input key / value types, i.e., the output
-    // key / value types of your mapper function
-    public static class TextReducer extends Reducer<?, ?, Text, Text> {
+    public static class TextReducer extends Reducer<Text, Tuple, Text, Text> {
         private final static Text emptyText = new Text("");
 
         public void reduce(Text key, Iterable<Tuple> queryTuples, Context context) throws IOException, InterruptedException
         {
-            int occurrences = 0;
-            Iterator<Tuple> iterator = queryTuples.iterator();
+            Map<String, Integer> queryWordQuantities = new HashMap<String, Integer>();
 
-            while (iterator.hasNext()) {
-                occurrences += Integer.parseInt(iterator.next().getSecond().toString());
+            for (Tuple tuple : tuples) {
+                if (queryWordQuantities.contains(tuple.getQueryWord())) {
+                    queryWordQuantities.put(tuple.getQueryWord(), tuple.getCount());
+                }
+                else {
+                    queryWordQuantities.put(tuple.getQueryWord(), queryWordQuantities.get(tuple.getQueryWord()) + tuple.getCount());
+                }
             }
 
             // Write out the results; you may change the following example
@@ -74,8 +82,8 @@ public class TextAnalyzer extends Configured implements Tool {
             //   Write out the current context key
             context.write(key, emptyText);
             //   Write out query words and their count
-            for(String queryWord: map.keySet()){
-                String count = map.get(queryWord).toString() + ">";
+            for(String queryWord: queryWordQuantities.keySet()){
+                String count = queryWordQuantities.get(queryWord).toString() + ">";
                 queryWordText.set("<" + queryWord + ",");
                 context.write(queryWordText, new Text(count));
             }
@@ -123,68 +131,69 @@ public class TextAnalyzer extends Configured implements Tool {
     }
 
     public static class Tuple implements WriteableComparable {
-        private Text first;
-        private Text second;
+        private Text queryWord;
+        private IntWritable count;
 
-        public TextPair(Text first, Text second) {
-            set(first, second);  
+        public Tuple(Text queryWord, Text count) {
+            this.queryWord = queryWord;
+            this.count = count;
         }
 
-        public TextPair() {
-            set(new Text(), new Text());
+        public Tuple() {
+            this.queryWord = "";
+            this.count = 0;
         }
 
-        public void set(Text first, Text second) {
-            this.first = first;
-            this.second = second;
+        public void updateCount(IntWritable count) {
+            this.count = count;
         }
 
-        public Text getFirst() {
+        public Text getQueryWord() {
             return first;
         }
 
-        public Text getSecond() {
-            return second;
+        public Text getCount() {
+            return count;
         }
 
         @Override
         public void readFields(DataInput in) throws IOException {
-            first.readFields(in);
-            second.readFields(in);
+            queryWord.readFields(in);
+            count.readFields(in);
         }
 
         @Override
         public void write(DataOutput out) throws IOException {
-            first.write(out);
-            second.write(out);
+            queryWord.write(out);
+            count.write(out);
         }        
 
         @Override
         public String toString() {
-            return first + " " + second;
+            return queryWord + " " + count;
         }
 
         @Override
-        public int compareTo(TextPair textPair) {
-            int compare = first.compareTo(textPair.first);
+        public int compareTo(Tuple tuple) {
+            int compare = queryWord.compareTo(tuple.queryWord);
 
             if (cmp != 0) {
                 return compare;
             }
 
-            return second.compareTo(textPair.second);
+            return count.compareTo(tuple.count);
         }
 
         @Override
         public int hashCode(Object object) {
-            return first.hashCode()*163 + second.hashCode();
+            return queryWord.hashCode()*163 + count.hashCode();
         }
 
         @Override
         public boolean equals(Object object) {
-            if (object instanceof TextPair) {
-                TextPair textPair = (TextPair) object;
-                return first.equals(textPair.first) && second.equals(textPair.second);
+            if (object instanceof Tuple) {
+                Tuple tuple = (Tuple) object; 
+                return queryWord.equals(tuple.queryWord) && count.equals(tuple.count);
             }
             return false;
         }
