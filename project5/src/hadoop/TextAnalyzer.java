@@ -30,7 +30,7 @@ public class TextAnalyzer extends Configured implements Tool {
             String sentence = value.toString();
             sentence = filter(sentence);
 
-            StringTokenizer tokenizer = new StringTokenizer(sentence, " ");
+            StringTokenizer tokenizer = new StringTokenizer(sentence, " +");
 
             ArrayList<String> words = new ArrayList<String>();
 
@@ -51,8 +51,8 @@ public class TextAnalyzer extends Configured implements Tool {
         
         private String filter(String unfiltered) {
             unfiltered = unfiltered.toLowerCase();
-            // unfiltered = unfiltered.replaceAll("[^0-9A-Za-z]", " ");
-            unfiltered = unfiltered.replaceAll("\\W", " ");
+            //unfiltered = unfiltered.replaceAll("\\W", " ");
+            unfiltered = unfiltered.replaceAll("[^A-Za-z]", " ");
             return unfiltered;
         }
     }
