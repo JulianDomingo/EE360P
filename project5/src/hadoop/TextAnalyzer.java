@@ -33,14 +33,17 @@ public class TextAnalyzer extends Configured implements Tool {
             StringTokenizer tokenizer = new StringTokenizer(sentence, " +");
 
             ArrayList<String> words = new ArrayList<String>();
-
+            HashMap<String, HashSet<Integer>> map = new HashMap<String, HashSet<Integer>>();                
             while (tokenizer.hasMoreTokens()) {
-                words.add(tokenizer.nextToken());
+                String word = tokenizer.nextToken();
+                words.add(word);
+                map.put(word, new HashSet<Integer>());
             }
 
             for (int con = 0; con < words.size(); con++) {
                 for (int query = 0; query < words.size(); query++) {
-                    if (con != query) {
+                    if (con != query && !map.get(words.get(con)).contains(query)) {
+                        map.get(words.get(con)).add(query);
                         Text contextWord = new Text(words.get(con));
                         Text queryWord = new Text(words.get(query));
                         context.write(contextWord, new Tuple(queryWord, ONE));
