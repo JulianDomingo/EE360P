@@ -161,6 +161,8 @@ int main(int argc, char **argv) {
 
   // TODO: Deallocate shit on heap lol
 
+
+
   // Wait for all processes to finish their respective computations before ending MPI session.
   MPI_Barrier(MPI_COMM_WORLD);
   MPI_Finalize();
