@@ -46,17 +46,19 @@ int main(int argc, char *argv[]) {
     }
 
 
-
+    int **matrix;
     // Root process puts matrix in heap so it's accessible to everybody. 
     if (is_root_process(processor_rank)) {
-        int **matrix = new int*[input_matrix.size()];
+        matrix = new int*[input_matrix.size()];
         for (int col = 0; col < input_matrix.size(); col++) {
             matrix[col] = new int[input_vector.size()];
         }
     } 
 
+   
+    // Initialize receiver buffer, containing the rows which the specified processor is allowed to touch. 
+    int receiver_buffer[1000];
 
-    // Initialize receiver buffer, containing the results 
     // Start processes
     MPI_Init(&argc, &argv);
     MPI_Comm_size(MPI_COMM_WORLD, &processor_rank);
@@ -89,9 +91,30 @@ int main(int argc, char *argv[]) {
     MPI_Scatterv(&matrix, chunk_sizes, starting_index_of_chunks, MPI_INT, &receiver_buffer, 1000, MPI_INT, 0, MPI_COMM_WORLD); 
 
     // Compute row-wise vector multiplication for current process
-    multiply 
+    
 
 
+
+
+    // Wait for all processes to be done with their respective matrix computations.
+    MPI_Barrier(MPI_COMM_WORLD);
+
+    // TODO: Store results in result.txt.  
+
+
+    // Deallocate objects placed on heap.
+    if (is_root_process(processor_rank)) {
+        for (int row = 0; row < matrix.size(); row++) {
+            delete [] matrix[row];
+        }
+        delete [] matrix;
+    }
+    delete [] chunk_sizes;
+    delete [] starting_index_of_chunks;
+
+
+    // Clean up MPI!
+    MPI_Finalize();
 }
 
 bool is_root_process(int rank) {
