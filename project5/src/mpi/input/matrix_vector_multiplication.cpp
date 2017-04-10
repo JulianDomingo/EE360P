@@ -7,8 +7,13 @@
 #include <fstream>
 #include <vector>
 #include <fstream>
+#include <mpi.h>
+
+#define ROOT_PROCESS 0
 
 int main(int argc, char *argv[]) {
+    int number_of_processors, processor_rank;
+    
     // Initialize vector and matrix for MPI processes.
     std::fstream vector_file("vector-1.txt", std::ios_base::in);
     std::fstream matrix_file("matrix-1.txt", std::ios_base::in);
@@ -40,13 +45,50 @@ int main(int argc, char *argv[]) {
         }
     }
 
-        
 
-    // Print matrix
-    for (int row = 0; row < input_matrix.size(); row++) {
-        for (int col = 0; col < input_matrix[0].size(); col++) {
-            std::cout << std::to_string(input_matrix[row].at(col)) + " ";
-        }
-        std::cout << std::endl;
+
+    // Put matrix in heap so it's accessible to all processes.
+    int **matrix = new int*[input_matrix.size()];
+    for (int col = 0; col < input_matrix.size(); col++) {
+        matrix[col] = new int[input_vector.size()];
     }
+
+
+    // Initialize receiver buffer, containing the results 
+    // Start processes
+    MPI_Init(&argc, &argv);
+    MPI_Comm_size(MPI_COMM_WORLD, &processor_rank);
+    MPI_Comm_rank(MPI_COMM_WORLD, &number_of_processors);
+
+    
+    int remainder_chunk_rows = (input_matrix.size() * input_matrix.size()) % number_of_processors;
+    int starting_index = 0;
+
+    int *chunk_sizes = new int[sizeof(int) * number_of_processes];
+    int *starting_index_of_chunks = new int[sizeof(int) * number_of_processes];
+
+
+
+    // Find:
+    // 1. "starting_index_of_chunks" - Starting indexes of row chunks to multiply with vector
+    // 2. "chunk_sizes" - Size of row chunks to multiply with vector for every process
+    for (int processor = 0; processor < number_of_processes; processor++) {
+        chunk_sizes[processor] = (input_matrix.size() * input_matrix.size()) / number_of_processors;
+        if (remainder_chunk_rows > 0) {
+            chunk_sizes[processor]++;
+            remainder_chunk_rows--;
+        } 
+        
+        starting_index_of_chunks[processor] = starting_index;
+        starting_index = chunk_sizes[processor];
+    }
+
+    // Broadcast designated row chunks to run row-wise vector multiplication for each process.
+    MPI_Scatterv(&matrix, chunk_sizes, starting_index_of_chunks, MPI_INT, &receiver_buffer, 1000, MPI_INT, 0, MPI_COMM_WORLD); 
+
+
+}
+
+bool is_root_process(int rank) {
+    return rank == 0;
 }
