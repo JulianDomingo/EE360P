@@ -1,14 +1,18 @@
-EXECS=multiplication_matrix_vector
+EXECS=matrix_mult
 MPICC?=mpicc
 
 all : ${EXECS}
 	
-multiplication_matrix_vector: multiplication_matrix_vector.c
-	${MPICC} -o multiplication_matrix_vector multiplication_matrix_vector.c
+matrix_mult: matrix_mult.c 
+	${MPICC} -o matrix_mult matrix_mult.c
 
 clean:
 	rm -f ${EXECS}
 	
 run:
-	mpiexec -np 6 multiplication_matrix_vector
-	mpiexec -np 3 multiplication_matrix_vector
+	mpiexec -np 7 matrix_mult	
+	mpiexec -np 5 matrix_mult
+	mpiexec -np 4 matrix_mult
+	mpiexec -np 3 matrix_mult
+	mpiexec -np 2 matrix_mult
+	mpiexec -np 1 matrix_mult
