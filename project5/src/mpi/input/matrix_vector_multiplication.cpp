@@ -47,11 +47,13 @@ int main(int argc, char *argv[]) {
 
 
 
-    // Put matrix in heap so it's accessible to all processes.
-    int **matrix = new int*[input_matrix.size()];
-    for (int col = 0; col < input_matrix.size(); col++) {
-        matrix[col] = new int[input_vector.size()];
-    }
+    // Root process puts matrix in heap so it's accessible to everybody. 
+    if (is_root_process(processor_rank)) {
+        int **matrix = new int*[input_matrix.size()];
+        for (int col = 0; col < input_matrix.size(); col++) {
+            matrix[col] = new int[input_vector.size()];
+        }
+    } 
 
 
     // Initialize receiver buffer, containing the results 
@@ -85,6 +87,9 @@ int main(int argc, char *argv[]) {
 
     // Broadcast designated row chunks to run row-wise vector multiplication for each process.
     MPI_Scatterv(&matrix, chunk_sizes, starting_index_of_chunks, MPI_INT, &receiver_buffer, 1000, MPI_INT, 0, MPI_COMM_WORLD); 
+
+    // Compute row-wise vector multiplication for current process
+    multiply 
 
 
 }
