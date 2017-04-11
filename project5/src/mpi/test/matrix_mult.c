@@ -40,6 +40,12 @@ int main(int argc, char **argv) {
 
 
     // Determine matrix row and column size for all processes.
+
+    // *** To make things simpler in getting MPI_Scatterv/MPI_Gatherv
+    // to properly function, the matrix is passed as a 1D array stream
+    // of numbers instead of a 2D array. This is due to most of the 
+    // example MPI programs passing a 1D structure of data types as the
+    // sending buffer.
     if (is_root_process(process_rank)) {
         if ((matrix_file = fopen("matrix.txt", "r")) == NULL) {
           printf("File does not exist.");
@@ -63,7 +69,7 @@ int main(int argc, char **argv) {
     }
 
 
-    // Pass matrix row and column sizes to all processes.
+    // Broadcast matrix row and column sizes to all processes.
     MPI_Bcast(&matrix_row_size, 1, MPI_INT, 0, MPI_COMM_WORLD);
     MPI_Bcast(&matrix_column_size, 1, MPI_INT, 0, MPI_COMM_WORLD);
 
@@ -71,7 +77,7 @@ int main(int argc, char **argv) {
         int remainder = matrix_row_size % number_of_processes;
         int starting_index = 0;
 
-        // Decides on number of rows to send and receive
+        // Determines number of rows to run the matrix multiplication for each process.
         for (int process = 0; process < number_of_processes; process++) {
             chunk_sizes[process] = (matrix_row_size / number_of_processes) * matrix_column_size;
             
@@ -87,6 +93,7 @@ int main(int argc, char **argv) {
         }
 
         vector = (int *) malloc(sizeof(int) * matrix_column_size);
+
 
         // Obtain vector and matrix data if root process.
         if (is_root_process(process_rank)) {
@@ -106,13 +113,11 @@ int main(int argc, char **argv) {
             resultant_vector = (int *) malloc(sizeof(int) * matrix_column_size);
         }
 
-        // Scatter rows using scatterv to other process from process 0
         int receiving_buffer[matrix_column_size * matrix_row_size];
 
         MPI_Scatterv(matrix, chunk_sizes, starting_index_of_chunks, MPI_INT, receiving_buffer, matrix_column_size * matrix_row_size,
                      MPI_INT, 0, MPI_COMM_WORLD);
 
-        // Broadcasting vector to other process from root
         MPI_Bcast(vector, matrix_column_size, MPI_INT, 0, MPI_COMM_WORLD);
 
 

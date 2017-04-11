@@ -1,0 +1,16 @@
+namenode => ec2-34-209-154-69.us-west-2.compute.amazonaws.com
+datanode1 => ec2-54-200-80-65.us-west-2.compute.amazonaws.com
+datanode2 => ec2-54-186-1-61.us-west-2.compute.amazonaws.com
+datanode3 => ec2-54-213-169-242.us-west-2.compute.amazonaws.com
+
+
+<configuration>
+  <property>
+    <name>mapreduce.jobtracker.address</name>
+    <value>ec2-34-209-154-69.us-west-2.compute.amazonaws.com:54311</value>
+  </property>
+  <property>
+    <name>mapreduce.framework.name</name>
+    <value>yarn</value>
+  </property>
+</configuration>

@@ -55,7 +55,7 @@ public class TextAnalyzer extends Configured implements Tool {
         private String filter(String unfiltered) {
             unfiltered = unfiltered.toLowerCase();
             //unfiltered = unfiltered.replaceAll("\\W", " ");
-            unfiltered = unfiltered.replaceAll("[^A-Za-z]", " ");
+            unfiltered = unfiltered.replaceAll("[^A-Za-z0-9]", " ");
             return unfiltered;
         }
     }
