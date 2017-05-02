@@ -1,5 +1,5 @@
 EXECS=matrix_mult
-CLEAN=matrix_mult, result.txt
+CLEAN=matrix_mult result.txt
 MPICC?=mpicc
 
 all : ${EXECS}

@@ -161,11 +161,12 @@ int main(int argc, char **argv) {
         // Generate result vector if root process
         if (is_root_process(process_rank)) {
             FILE *result_file = fopen("result.txt", "w+");
-            
+             
             for (int element = 0; element < matrix_row_size; element++) {
-                fprintf(result_file, "%d ", resultant_vector[element]);
+              printf("%d ", resultant_vector[element]);
+              fprintf(result_file, "%d ", resultant_vector[element]);
             }
-            fclose(matrix_file);
+            fclose(result_file);
         }
     }
 
