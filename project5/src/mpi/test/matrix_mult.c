@@ -145,7 +145,7 @@ int main(int argc, char **argv) {
             matrix_index++;
         } 
 
-        free(vector);
+
         // Allocate MPI vector for passing data to process 0 and gather results.
         // MPI_Type_vector: creates an MPI-based vector to store matrix computation result in MPI_Gatherv(). 
         MPI_Type_vector(received_chunk_sizes[process_rank], 1, number_of_processes, MPI_INT, &sending_type);
@@ -164,16 +164,10 @@ int main(int argc, char **argv) {
                 fprintf(result_file, "%d ", resultant_vector[element]);
             }
             fclose(result_file);
-            free(resultant_vector);
         }
     }
 
     // Wait for all processes to finish their respective computations before ending MPI session.
-    free(received_starting_index_of_chunks);
-    free(received_chunk_sizes);
-    free(starting_index_of_chunks);
-    free(chunk_sizes);
-    
     MPI_Barrier(MPI_COMM_WORLD);
     MPI_Finalize();
     return 0;
