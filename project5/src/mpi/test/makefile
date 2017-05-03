@@ -9,6 +9,3 @@ matrix_mult: matrix_mult.c
 
 clean:
 	rm -f ${CLEAN}
-	
-run:
-	mpiexec -np 1 matrix_mult

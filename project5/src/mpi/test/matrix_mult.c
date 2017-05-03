@@ -145,32 +145,35 @@ int main(int argc, char **argv) {
             matrix_index++;
         } 
 
-
+        free(vector);
         // Allocate MPI vector for passing data to process 0 and gather results.
-        if (is_root_process(process_rank)) {
-            // MPI_Type_vector: creates an MPI-based vector to store matrix computation result in MPI_Gatherv(). 
-            MPI_Type_vector(received_chunk_sizes[process_rank], 1, number_of_processes, MPI_INT, &sending_type);
-            MPI_Type_commit(&sending_type);
+        // MPI_Type_vector: creates an MPI-based vector to store matrix computation result in MPI_Gatherv(). 
+        MPI_Type_vector(received_chunk_sizes[process_rank], 1, number_of_processes, MPI_INT, &sending_type);
+        MPI_Type_commit(&sending_type);
 
-            int *send_buffer = &matrix_computation[0][process_rank];
+        int *send_buffer = &matrix_computation[0][process_rank];
 
-            MPI_Gatherv(send_buffer, 1, sending_type, resultant_vector, received_chunk_sizes, received_starting_index_of_chunks, MPI_INT, 0, MPI_COMM_WORLD);
-        }
+        MPI_Gatherv(send_buffer, 1, sending_type, resultant_vector, received_chunk_sizes, received_starting_index_of_chunks, MPI_INT, 0, MPI_COMM_WORLD);
 
 
         // Generate result vector if root process
         if (is_root_process(process_rank)) {
             FILE *result_file = fopen("result.txt", "w+");
-             
+            
             for (int element = 0; element < matrix_row_size; element++) {
-              printf("%d ", resultant_vector[element]);
-              fprintf(result_file, "%d ", resultant_vector[element]);
+                fprintf(result_file, "%d ", resultant_vector[element]);
             }
             fclose(result_file);
+            free(resultant_vector);
         }
     }
 
     // Wait for all processes to finish their respective computations before ending MPI session.
+    free(received_starting_index_of_chunks);
+    free(received_chunk_sizes);
+    free(starting_index_of_chunks);
+    free(chunk_sizes);
+    
     MPI_Barrier(MPI_COMM_WORLD);
     MPI_Finalize();
     return 0;
