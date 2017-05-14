@@ -38,7 +38,6 @@ int main(int argc, char **argv) {
     int *received_chunk_sizes = (int *) malloc(sizeof(int) * number_of_processes);
     int *received_starting_index_of_chunks = (int *) malloc(sizeof(int) * number_of_processes);
 
-
     // Determine matrix row and column size for all processes.
 
     // *** To make things simpler in getting MPI_Scatterv/MPI_Gatherv
